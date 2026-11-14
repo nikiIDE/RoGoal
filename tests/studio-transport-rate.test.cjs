@@ -35,7 +35,7 @@ test('only one release is published and the updater manifest is checked',()=>{
   assert.match(workflow,/electron-builder --win nsis --publish never/);
   assert.match(workflow,/gh release create \$tag \$assets/);
   assert.doesNotMatch(workflow,/electron-builder --win nsis --publish always/);
-  assert.equal(pkg.build.win.artifactName,'Cursor-Bridge-Setup-${version}.${ext}');
+  assert.equal(pkg.build.win.artifactName,'RoGoal-Setup-${version}.${ext}');
   assert.match(workflow,/Verify updater manifest matches installer/);
   assert.match(workflow,/latest\.yml checksum does not match installer/);
 });

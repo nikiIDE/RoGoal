@@ -4,15 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self' blob:; connect-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'none'" />
-  <title>Cursor Bridge</title>
+  <title>RoGoal</title>
 </head>
-<body data-theme="obsidian">
+<body data-theme="studio">
 <div id="app">
   <div class="window-titlebar" aria-label="Application title bar">
-    <div class="window-titlebar-content"><span class="window-app-name">Cursor Bridge</span><span class="window-title-divider">/</span><span id="windowWorkspace">Local workspace</span></div>
+    <div class="window-titlebar-content"><img class="window-app-icon" src="/RoGoal.png" alt="" width="15" height="15" /><span class="window-app-name">RoGoal</span><span class="window-title-divider">/</span><span id="windowWorkspace">Local workspace</span></div>
   </div>
   <header class="app-header">
-    <div class="brand-lockup"><span class="brand-name">Workspace</span><span class="brand-divider"></span><span class="brand-workspace" id="headerPlace">Workspace</span></div>
+    <div class="brand-lockup"><span class="brand-name">RoGoal</span><span class="brand-divider"></span><span class="brand-workspace" id="headerPlace">Workspace</span></div>
     <div class="header-actions">
       <button class="header-status" id="sessionToggle" aria-haspopup="true" aria-expanded="false" title="Session details"><span class="status-light" id="statusLight"></span><span id="connectionState">Waiting for Studio</span><span data-icon="chevron-down"></span></button>
       <button class="quick-launcher" id="quickApplyLauncher" title="Import a script bundle (Ctrl+L)" aria-label="Quick Apply">Quick Apply <kbd>Ctrl L</kbd></button>
@@ -74,9 +74,9 @@
         <div class="dashboard-content">
           <div class="workspace-status" id="dashboardStatus">Not connected</div>
           <h1 id="welcomeTitle">Connect to Roblox Studio</h1>
-          <p id="welcomeDescription">Enter the pairing code in the Cursor Bridge plugin to start editing.</p>
+          <p id="welcomeDescription">Enter the pairing code in the RoGoal plugin to start editing.</p>
           <div class="pairing-card" id="pairingCard">
-            <div class="pairing-copy"><span>Pairing code</span><small>Cursor Bridge plugin in Roblox Studio</small></div>
+            <div class="pairing-copy"><span>Pairing code</span><small>RoGoal plugin in Roblox Studio</small></div>
             <div class="pairing-code"><strong id="pairingCode">------</strong><button class="icon-button quiet" id="copyCode" title="Copy pairing code" aria-label="Copy pairing code"><span data-icon="copy"></span></button></div>
           </div>
           <div class="workspace-summary" id="workspaceSummary" hidden>
@@ -113,7 +113,7 @@
     <div class="workspace-drop dock-drop-left" data-kind="panel" data-side="left"><span data-icon="layout"></span><strong>Dock Explorer left</strong></div>
     <div class="workspace-drop dock-drop-right" data-kind="panel" data-side="right"><span data-icon="layout"></span><strong>Dock Explorer right</strong></div>
   </div>
-  <div class="app-footer"><span id="bottomMessage">Waiting for local pairing</span><span id="appVersion">v0.4.2</span></div>
+  <div class="app-footer"><span id="bottomMessage">Waiting for local pairing</span><span id="appVersion">v0.5.0</span></div>
 
   <div class="floating-panel session-panel" id="sessionPanel" hidden>
     <div class="popover-heading">Studio session <button class="icon-button quiet small" id="closeSession" aria-label="Close session details"><span data-icon="close"></span></button></div>
@@ -129,7 +129,7 @@
     <div class="popover-heading">Appearance & editor</div>
     <div class="appearance-label">Workbench theme</div><div id="themeOptions" class="theme-options"></div>
     <div class="appearance-divider"></div>
-    <label class="appearance-field"><span>Code colors</span><select id="codeThemeSetting" aria-label="Script editor color theme"><option value="auto">Follow workbench</option><option value="obsidian">Obsidian</option><option value="cursor">Cursor</option><option value="graphite">Graphite</option><option value="midnight">Midnight</option><option value="aurora">Aurora</option></select></label>
+    <label class="appearance-field"><span>Code colors</span><select id="codeThemeSetting" aria-label="Script editor color theme"><option value="auto">Follow workbench</option><option value="studio">Studio</option><option value="obsidian">Obsidian</option><option value="cursor">Slate</option><option value="graphite">Graphite</option><option value="midnight">Midnight</option><option value="aurora">Aurora</option></select></label>
     <label class="appearance-field"><span>Font</span><select id="fontFamilySetting" aria-label="Editor font"><option value="Cascadia Code, JetBrains Mono, Consolas, monospace">Cascadia Code</option><option value="JetBrains Mono, Consolas, monospace">JetBrains Mono</option><option value="Consolas, monospace">Consolas</option><option value="monospace">System Mono</option></select></label>
     <label class="appearance-field"><span>Font size</span><input id="fontSizeSetting" type="number" min="11" max="24" step="1" aria-label="Editor font size" /></label>
     <label class="appearance-field"><span>Word wrap</span><input id="wordWrapSetting" type="checkbox" aria-label="Wrap long lines" /></label>

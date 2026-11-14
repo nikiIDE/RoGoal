@@ -1,10 +1,9 @@
 --!strict
 
--- Shared settings contract used by the other Cursor V2 plugins.
 local Defaults = {
 	Version = 2,
 	Appearance = {
-		Theme = "Obsidian",
+		Theme = "Studio",
 		ReduceMotion = false,
 		Animations = true,
 		Density = "Comfortable",
@@ -15,8 +14,8 @@ local Defaults = {
 		ShowTooltips = true,
 	},
 	Product = {
-		Name = "Cursor Bridge V2",
-		Version = "0.4.2",
+		Name = "RoGoal",
+		Version = "0.5.0",
 	},
 	Advanced = {
 		DebugLogging = false,

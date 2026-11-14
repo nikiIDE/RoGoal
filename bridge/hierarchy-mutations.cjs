@@ -79,7 +79,7 @@ function prepareMutation(nodes, request) {
     if (action === 'rename' && (request.ids.length !== 1 || top.length !== 1)) reject('Rename exactly one instance.');
     targets = top.map((id) => {
       const node = nodes.get(id);
-      if (node.parentId === 'game') reject('Built-in Roblox services cannot be changed from Cursor Bridge.');
+      if (node.parentId === 'game') reject('Built-in Roblox services cannot be changed from RoGoal.');
       return snapshot(node);
     });
   }
@@ -100,7 +100,7 @@ function prepareMutation(nodes, request) {
   let className;
   if (action === 'create' || action === 'rename') name = validName(request.name);
   if (action === 'create') {
-    if (!MUTABLE_CLASSES.has(request.className)) reject('This instance class is not supported by Cursor Bridge.');
+    if (!MUTABLE_CLASSES.has(request.className)) reject('This instance class is not supported by RoGoal.');
     className = request.className;
   }
   return { action, targets, destination, name, className };

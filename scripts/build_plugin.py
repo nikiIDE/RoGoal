@@ -12,7 +12,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "plugin" / "source"
 TEMPLATES = ROOT / "plugin" / "templates" / "templates.xml"
-OUTPUT = ROOT / "CursorBridgeV2.rbxmx"
+MAIN_GUI = TEMPLATES.with_name("main-gui.xml")
+OUTPUT = ROOT / "RoGoal.rbxmx"
+PLUGIN_NAMESPACE = uuid.UUID("b88292c9-00bf-40bb-955e-6b63a42d0dca")
 
 # Studio-written templates reference the empty shared-string value for Tags,
 # ModelMeshData and SlimHash. Every such reference must have a matching entry
@@ -22,14 +24,14 @@ SHARED_STRING_CONTENTS = {EMPTY_SHARED_STRING_KEY: ""}
 
 MODULE_GROUPS = {
     "Packages": ("Maid",),
-    "UI": ("Theme", "Primitives", "CursorShell", "BridgeWindow"),
+    "UI": ("Theme", "Primitives", "VertexShell", "ReferenceLayout", "BridgeWindow"),
     "Services": ("StudioBridge", "HierarchyMutations", "QuickApply", "WireTransfer", "PathResolver"),
     "Controllers": ("BridgeController",),
     "Core": (
         "CommandService", "ShortcutService", "SettingsService",
-        "NotificationService", "ThemeService", "Logger",
+        "ThemeService", "Logger",
     ),
-    "Config": ("Defaults",),
+    "Config": ("Defaults", "Product"),
 }
 
 
@@ -47,10 +49,11 @@ def set_property(item: ET.Element, name: str, value: str) -> None:
 def build_item(templates: dict[str, ET.Element], item_type: str, name: str, source: str | None = None) -> ET.Element:
     item = copy.deepcopy(templates[item_type])
     item.attrib.pop("template", None)
-    item.set("referent", f"RBX{uuid.uuid4().hex.upper()}")
+    referent = uuid.uuid5(PLUGIN_NAMESPACE, f"{item_type}/{name}")
+    item.set("referent", f"RBX{referent.hex.upper()}")
     set_property(item, "Name", name)
     if item_type in ("Script", "ModuleScript"):
-        set_property(item, "ScriptGuid", "{" + str(uuid.uuid4()).upper() + "}")
+        set_property(item, "ScriptGuid", "{" + str(uuid.uuid5(PLUGIN_NAMESPACE, f"script/{name}")).upper() + "}")
     if source is not None:
         set_property(item, "Source", source)
     return item
@@ -82,6 +85,10 @@ def validate_plugin(root: ET.Element, expected_sources: dict[str, str] | None = 
     referents = [item.get("referent") for item in instances]
     if any(not ref or ref == "null" for ref in referents) or len(referents) != len(set(referents)):
         raise ValueError("Duplicate, empty, or reserved instance referent")
+
+    known_refs = set(referents) | {"null", "nil"}
+    if any(ref.text not in known_refs for ref in root.findall(".//Properties/Ref")):
+        raise ValueError("Unresolved instance reference")
 
     tables = root.findall("SharedStrings")
     if len(tables) != 1:
@@ -135,14 +142,18 @@ def main() -> None:
     ET.SubElement(root, "External").text = "nil"
 
     source_files = {"Main": (SOURCE / "Main.lua").read_text(encoding="utf-8")}
-    model = build_item(templates, "Model", "CursorBridgeV2")
-    model.append(build_item(templates, "Script", "Main", source_files["Main"]))
+    model = build_item(templates, "Model", "RoGoal")
+    bootstrap = build_item(templates, "Script", "Main", source_files["Main"])
+    set_property(bootstrap, "RunContext", "3")
+    model.append(bootstrap)
     for group_name, names in MODULE_GROUPS.items():
         group = build_item(templates, "Folder", group_name)
         for name in names:
             source = (SOURCE / group_name / f"{name}.lua").read_text(encoding="utf-8")
             source_files[name] = source
             group.append(build_item(templates, "ModuleScript", name, source))
+        if group_name == "UI":
+            group.append(ET.parse(MAIN_GUI).getroot())
         model.append(group)
     root.append(model)
     add_shared_strings(root)

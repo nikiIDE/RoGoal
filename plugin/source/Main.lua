@@ -2,124 +2,95 @@
 
 local RunService = game:GetService("RunService")
 
--- Imported plugin models must not execute as ordinary game scripts.
-if RunService:IsRunning() then
-	return
-end
-
-local pluginContext: Plugin? = plugin
-if pluginContext == nil then
+local pluginContext = plugin
+if pluginContext == nil or not RunService:IsStudio() or not RunService:IsEdit() then
 	return
 end
 
 local Root = script.Parent
-local PLUGIN_ICON = "rbxassetid://132318313203288"
-
-local toolbar = pluginContext:CreateToolbar("Cursor Bridge V2")
-local button = toolbar:CreateButton(
-	"CursorBridgeV2Toggle",
-	"Open Cursor Bridge V2",
-	PLUGIN_ICON,
-	"Bridge V2"
-)
+local Product = require(Root.Config.Product)
+local toolbar = pluginContext:CreateToolbar(Product.Name)
+local button = toolbar:CreateButton(Product.WidgetId .. ".Toggle", "Open " .. Product.Name, Product.Icon, Product.Name)
 button.ClickableWhenViewportHidden = true
 
-local controller: any = nil
-local visibilityConnection: RBXScriptConnection? = nil
+local controller: any
+local widget: DockWidgetPluginGui?
 local initializing = false
 local alive = true
 
-local function reportFailure(stage: string, message: any)
-	warn(string.format("[Cursor Bridge V2] %s failed:\n%s", stage, tostring(message)))
-end
-
 local function destroyController()
-	if visibilityConnection then
-		visibilityConnection:Disconnect()
-		visibilityConnection = nil
+	local active = controller
+	controller = nil
+	if active then
+		active:Destroy()
 	end
-
-	if controller then
-		local activeController = controller
-		controller = nil
-		local ok, err = xpcall(function()
-			activeController:Destroy()
-		end, debug.traceback)
-		if not ok then
-			reportFailure("shutdown", err)
-		end
-	end
-
-	button:SetActive(false)
 end
 
-local function initializeController(): boolean
-	if RunService:IsRunning() or initializing then
-		return false
+local function toggle()
+	if not alive or not RunService:IsEdit() or initializing then
+		return
 	end
-	if controller then
-		return true
-	end
-
-	initializing = true
-	local builtController: any = nil
-	local ok, err = xpcall(function()
-		local BridgeController = require(Root.Controllers.BridgeController)
-		builtController = BridgeController.new(pluginContext :: Plugin)
-	end, debug.traceback)
-	if not ok or not builtController then
-		initializing = false
-		reportFailure("bootstrap", err)
-		return false
-	end
-
-	if RunService:IsRunning() then
-		initializing = false
-		builtController:Destroy()
-		return false
-	end
-
-	controller = builtController
-	visibilityConnection = controller:GetVisibilityChangedSignal():Connect(function(visible: boolean)
-		button:SetActive(visible)
-	end)
-
-	local started, startErr = xpcall(function()
-		controller:Start()
-	end, debug.traceback)
-	initializing = false
-	if not started then
-		reportFailure("startup", startErr)
-		destroyController()
-		return false
-	end
-	return true
-end
-
-button.Click:Connect(function()
-	if RunService:IsRunning() or not initializeController() then
+	if widget and controller then
+		widget.Enabled = not widget.Enabled
 		return
 	end
 
+	initializing = true
 	local ok, err = xpcall(function()
-		controller:Toggle()
-	end, debug.traceback)
-	if not ok then
-		reportFailure("toggle", err)
-	end
-end)
+		local panel = widget
+		if not panel then
+			local info = DockWidgetPluginGuiInfo.new(Enum.InitialDockState.Right, false, true, 420, 390, 352, 300)
+			panel = pluginContext:CreateDockWidgetPluginGuiAsync(Product.WidgetId, info)
+			if not alive then
+				panel:Destroy()
+				return
+			end
+			widget = panel
+			panel.Title = Product.Name
+			panel.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+			panel:GetPropertyChangedSignal("Enabled"):Connect(function()
+				button:SetActive(panel.Enabled)
+			end)
+		end
 
--- Match the other Cursor V2 plugins: release all UI and connections for Play Test.
+		if not RunService:IsEdit() then
+			return
+		end
+		local BridgeController = require(Root.Controllers.BridgeController)
+		controller = BridgeController.new(pluginContext, panel)
+		controller:Start()
+		panel.Enabled = true
+	end, debug.traceback)
+	initializing = false
+
+	if not ok then
+		warn(string.format("[%s] %s", Product.Name, tostring(err)))
+		destroyController()
+		if widget then
+			widget.Enabled = false
+			widget:ClearAllChildren()
+		end
+	end
+end
+
+button.Click:Connect(toggle)
 task.spawn(function()
 	while alive do
-		if RunService:IsRunning() and controller ~= nil then
+		if widget and not RunService:IsEdit() then
+			if widget.Enabled then
+				widget.Enabled = false
+			end
 			destroyController()
 		end
-		task.wait(0.1)
+		task.wait(0.15)
 	end
 end)
 
 pluginContext.Unloading:Connect(function()
 	alive = false
 	destroyController()
+	if widget then
+		widget:Destroy()
+		widget = nil
+	end
 end)

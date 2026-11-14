@@ -10,11 +10,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: cursor-bridge-release
+  group: rogoal-release
   cancel-in-progress: false
 
 jobs:
   regression:
+    # The initial repository import is published from its verified local build.
+    if: github.event_name == 'workflow_dispatch' || github.event.before != '0000000000000000000000000000000000000000'
     uses: ./.github/workflows/workspace-validation.yml
     permissions:
       contents: read
@@ -78,7 +80,7 @@ jobs:
         shell: pwsh
         run: |
           $version = node -p "require('./package.json').version"
-          $expected = "Cursor-Bridge-Setup-$version.exe"
+          $expected = "RoGoal-Setup-$version.exe"
           $installerPath = Join-Path 'release' $expected
           $manifestPath = Join-Path 'release' 'latest.yml'
           if (-not (Test-Path -LiteralPath $installerPath)) { throw "Expected installer missing: $expected" }
@@ -90,8 +92,7 @@ jobs:
           if (-not $manifest.Contains("sha512: $base64Sha")) { throw 'latest.yml checksum does not match installer' }
           if (-not $manifest.Contains("size: $size")) { throw 'latest.yml size does not match installer' }
 
-      # Version-bump pushes and manual dispatch publish once; internally created
-      # tags must not trigger a second release workflow.
+      # Use the existing version tag or tag the selected branch commit.
       - name: Create matching version tag for branch or manual release
         if: github.ref_type != 'tag'
         shell: pwsh
@@ -115,10 +116,10 @@ jobs:
         run: |
           $tag = '${{ steps.release_meta.outputs.tag }}'
           $version = node -p "require('./package.json').version"
-          $installer = Get-Item -LiteralPath (Join-Path 'release' "Cursor-Bridge-Setup-$version.exe")
-          $blockmap = Get-Item -LiteralPath (Join-Path 'release' "Cursor-Bridge-Setup-$version.exe.blockmap")
+          $installer = Get-Item -LiteralPath (Join-Path 'release' "RoGoal-Setup-$version.exe")
+          $blockmap = Get-Item -LiteralPath (Join-Path 'release' "RoGoal-Setup-$version.exe.blockmap")
           $metadata = Join-Path $PWD 'release/latest.yml'
-          $studioPlugin = Join-Path $PWD 'CursorBridgeV2.rbxmx'
+          $studioPlugin = Join-Path $PWD 'RoGoal.rbxmx'
           if ($null -eq $installer) { throw 'Windows installer is missing.' }
           if ($null -eq $blockmap) { throw 'Installer blockmap is missing.' }
           if (-not (Test-Path -LiteralPath $metadata)) { throw 'latest.yml is missing.' }
@@ -126,12 +127,12 @@ jobs:
           $assets = @($installer.FullName, $blockmap.FullName, $metadata, $studioPlugin)
           $notesFile = Join-Path 'docs' "RELEASE_$($version.Replace('.', '_')).md"
           if (Test-Path -LiteralPath $notesFile) {
-            $title = "Cursor Bridge $tag"
+            $title = "RoGoal $tag"
             $heading = Get-Content -LiteralPath $notesFile -TotalCount 1 -Encoding utf8
             if ($heading -match '^#\s+(.+)$') { $title = $Matches[1].Trim() }
             gh release create $tag $assets --title $title --notes-file $notesFile --latest --verify-tag
           } else {
-            gh release create $tag $assets --title "Cursor Bridge $tag" --notes "Cursor Bridge $tag" --latest --verify-tag
+            gh release create $tag $assets --title "RoGoal $tag" --notes "RoGoal $tag" --latest --verify-tag
           }
           if ($LASTEXITCODE -ne 0) { throw 'GitHub release publication failed.' }
 
@@ -145,6 +146,6 @@ jobs:
           if ($LASTEXITCODE -ne 0 -or $isDraft -ne 'false') { throw 'Release is not public.' }
           $assetNames = @(gh release view $tag --json assets --jq '.assets[].name')
           if ($LASTEXITCODE -ne 0) { throw 'Could not verify release assets.' }
-          if (-not ($assetNames -contains 'CursorBridgeV2.rbxmx')) { throw 'Studio plugin missing from release.' }
+          if (-not ($assetNames -contains 'RoGoal.rbxmx')) { throw 'Studio plugin missing from release.' }
           if (-not ($assetNames -contains 'latest.yml')) { throw 'Update metadata missing from release.' }
           if (-not ($assetNames | Where-Object { $_ -like '*.exe' })) { throw 'Windows installer missing from release.' }

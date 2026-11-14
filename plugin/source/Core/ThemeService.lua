@@ -26,10 +26,10 @@ local COLOR_PROPERTIES = {
 }
 
 local COLOR_ATTRIBUTES = {
-	"CursorBaseBackground",
-	"CursorBaseForeground",
-	"CursorHoverBackground",
-	"CursorHoverForeground",
+	"VertexBaseBackground",
+	"VertexBaseForeground",
+	"VertexHoverBackground",
+	"VertexHoverForeground",
 	"EaseColor",
 }
 
@@ -72,6 +72,9 @@ local function buildReplacementMap(before: {[string]: Color3}, after: {[string]:
 end
 
 local function remapObject(object: Instance, replacements: {[string]: Color3})
+	if object:GetAttribute("ReferenceAppearance") == true then
+		return
+	end
 	for _, propertyName in COLOR_PROPERTIES do
 		local ok, current = pcall(function()
 			return (object :: any)[propertyName]
@@ -131,6 +134,9 @@ function ThemeService:_stopRainbow()
 end
 
 function ThemeService:_registerRainbowObject(object: Instance)
+	if object:GetAttribute("ReferenceAppearance") == true then
+		return
+	end
 	local theme = self._theme
 	if not theme then
 		return
@@ -249,17 +255,14 @@ function ThemeService:Initialize()
 		return
 	end
 	local preset = self._settings:Get("Appearance.Theme")
-	local applied = theme.ApplyPreset(if typeof(preset) == "string" then preset else "Obsidian")
-	if applied ~= preset then
-		self._settings:Set("Appearance.Theme", applied)
-	end
+	theme.ApplyPreset(if typeof(preset) == "string" then preset else "Studio")
 	theme.ReduceMotion = self._settings:Get("Appearance.ReduceMotion") == true
 	theme.AnimationsEnabled = self._settings:Get("Appearance.Animations") ~= false
 end
 
 function ThemeService:GetActivePreset(): string
 	local theme = self._theme
-	return if theme then theme.GetActivePreset() else "Obsidian"
+	return if theme then theme.GetActivePreset() else "Studio"
 end
 
 function ThemeService:GetPresetNames(): {string}
@@ -276,7 +279,7 @@ end
 function ThemeService:SetPreset(name: string, root: Instance?): string
 	local theme = self._theme
 	if not theme then
-		return "Obsidian"
+		return "Studio"
 	end
 
 	self:_stopRainbow()

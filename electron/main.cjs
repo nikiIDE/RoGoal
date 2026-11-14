@@ -15,6 +15,12 @@ let updateDownloaded = false;
 let installingUpdate = false;
 let shutdownStarted = false;
 
+// Keep existing recovery data, workspace preferences and the shared instance lock.
+const bridgeData = path.join(app.getPath('appData'), 'Cursor Bridge');
+fs.mkdirSync(bridgeData, { recursive: true });
+app.setPath('userData', bridgeData);
+app.setAppUserModelId('com.nikiide.rogoal');
+
 const acquiredLock = app.requestSingleInstanceLock();
 if (!acquiredLock) {
   app.quit();
@@ -47,13 +53,13 @@ function sendToRenderer(event) {
 
 async function createWindow() {
   mainWindow = new BrowserWindow({
-    title: 'Cursor Bridge',
+    title: 'RoGoal',
     ...initialWindowBounds(screen.getPrimaryDisplay().workArea),
-    backgroundColor: '#0b0b0d',
+    backgroundColor: windowStyleForTheme('studio').color,
     titleBarStyle: 'hidden',
-    ...(process.platform !== 'darwin' ? { titleBarOverlay: windowStyleForTheme('obsidian') } : {}),
+    ...(process.platform !== 'darwin' ? { titleBarOverlay: windowStyleForTheme('studio') } : {}),
     show: false,
-    icon: path.join(ROOT, 'assets', 'CursorIcon.png'),
+    icon: path.join(ROOT, 'assets', 'RoGoal.png'),
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -143,8 +149,8 @@ function configureUpdater() {
   autoUpdater.on('update-available', async (info) => {
     const { response } = await dialog.showMessageBox(mainWindow, {
       type: 'question', buttons: ['Download update', 'Later'], defaultId: 0, cancelId: 1,
-      title: 'Cursor Bridge update',
-      message: `Cursor Bridge ${info.version} is available.`,
+      title: 'RoGoal update',
+      message: `RoGoal ${info.version} is available.`,
       detail: 'Download the GitHub release now? Studio scripts and drafts remain backed up locally.',
     });
     if (response === 0) {
@@ -159,7 +165,7 @@ function configureUpdater() {
     const { response } = await dialog.showMessageBox(mainWindow, {
       type: 'question', buttons: ['Restart and install', 'Later'], cancelId: 1,
       title: 'Ready to install',
-      message: `Cursor Bridge ${info.version} is ready.`,
+      message: `RoGoal ${info.version} is ready.`,
       detail: 'Restarting disconnects the current Roblox Studio session. Unsynced drafts will remain in local recovery storage.',
     });
     if (response === 0) {
@@ -178,7 +184,7 @@ if (acquiredLock) {
     try {
       await bridge.start();
     } catch (error) {
-      dialog.showErrorBox('Cursor Bridge failed to start',
+      dialog.showErrorBox('RoGoal failed to start',
         `Cannot bind the local bridge port. Close other instances or free port 38471.\n\n${error.message}`);
       app.quit();
       return;
@@ -193,7 +199,7 @@ if (acquiredLock) {
       setInterval(() => checkForUpdates(), 6 * 60 * 60 * 1000).unref();
     }
   }).catch((error) => {
-    dialog.showErrorBox('Cursor Bridge error', error.message);
+    dialog.showErrorBox('RoGoal error', error.message);
     app.quit();
   });
   app.on('window-all-closed', () => app.quit());

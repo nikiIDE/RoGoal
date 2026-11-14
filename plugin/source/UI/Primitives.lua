@@ -1,8 +1,6 @@
 --!strict
 
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 
 local Root = script.Parent.Parent
 local Theme = require(Root.UI.Theme)
@@ -40,8 +38,8 @@ function Primitives.Label(parent: Instance, text: string, size: number, color: C
 		BorderSizePixel = 0,
 		Text = text,
 		TextColor3 = color or Theme.Text,
-		TextSize = size,
-		Font = if medium then Enum.Font.GothamMedium else Enum.Font.Gotham,
+		TextSize = math.max(13, size + 4),
+		Font = if medium then Enum.Font.SourceSansBold else Enum.Font.SourceSans,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Center,
 	}, parent)
@@ -79,16 +77,16 @@ local function cancelButtonTween(object: TextButton)
 end
 
 local function resolveButtonVisual(object: TextButton): (Color3, Color3, number)
-	local hovered = object:GetAttribute("CursorHovered") == true
-	local pressed = object:GetAttribute("CursorPressed") == true
-	local background = readButtonColor(object, "CursorBaseBackground", object.BackgroundColor3)
-	local foreground = readButtonColor(object, "CursorBaseForeground", object.TextColor3)
-	local transparency = readButtonNumber(object, "CursorBaseTransparency", object.BackgroundTransparency)
+	local hovered = object:GetAttribute("VertexHovered") == true
+	local pressed = object:GetAttribute("VertexPressed") == true
+	local background = readButtonColor(object, "VertexBaseBackground", object.BackgroundColor3)
+	local foreground = readButtonColor(object, "VertexBaseForeground", object.TextColor3)
+	local transparency = readButtonNumber(object, "VertexBaseTransparency", object.BackgroundTransparency)
 
 	if hovered then
-		background = readButtonColor(object, "CursorHoverBackground", background)
-		foreground = readButtonColor(object, "CursorHoverForeground", foreground)
-		transparency = readButtonNumber(object, "CursorHoverTransparency", transparency)
+		background = readButtonColor(object, "VertexHoverBackground", background)
+		foreground = readButtonColor(object, "VertexHoverForeground", foreground)
+		transparency = readButtonNumber(object, "VertexHoverTransparency", transparency)
 	end
 	if pressed then
 		background = Theme.SurfaceActive
@@ -127,16 +125,16 @@ function Primitives.SetButtonVisual(
 	hoverBackground: Color3?,
 	hoverForeground: Color3?
 )
-	object:SetAttribute("CursorBaseBackground", background)
-	object:SetAttribute("CursorBaseForeground", foreground)
-	object:SetAttribute("CursorHoverBackground", hoverBackground or Theme.SurfaceHover)
-	object:SetAttribute("CursorHoverForeground", hoverForeground or Theme.Text)
+	object:SetAttribute("VertexBaseBackground", background)
+	object:SetAttribute("VertexBaseForeground", foreground)
+	object:SetAttribute("VertexHoverBackground", hoverBackground or Theme.SurfaceHover)
+	object:SetAttribute("VertexHoverForeground", hoverForeground or Theme.Text)
 	renderButtonVisual(object, false)
 end
 
 function Primitives.SetButtonTransparency(object: TextButton, baseTransparency: number, hoverTransparency: number)
-	object:SetAttribute("CursorBaseTransparency", math.clamp(baseTransparency, 0, 1))
-	object:SetAttribute("CursorHoverTransparency", math.clamp(hoverTransparency, 0, 1))
+	object:SetAttribute("VertexBaseTransparency", math.clamp(baseTransparency, 0, 1))
+	object:SetAttribute("VertexHoverTransparency", math.clamp(hoverTransparency, 0, 1))
 	renderButtonVisual(object, false)
 end
 
@@ -154,15 +152,16 @@ function Primitives.Button(parent: Instance, text: string, width: number, varian
 		Size = UDim2.fromOffset(width, Theme.ControlHeight),
 		Text = text,
 		TextColor3 = foreground,
-		TextSize = 10,
-		Font = Enum.Font.GothamMedium,
+		TextSize = 14,
+		Font = Enum.Font.SourceSansBold,
+		Active = true,
 		Selectable = true,
 	}, parent)
 	Primitives.Corner(object, Theme.RadiusSmall)
 	local outline = Primitives.Stroke(object, if style == "Primary" then Theme.BorderStrong else Theme.BorderSoft)
 	outline.Transparency = if style == "Ghost" then 0.55 else 0
-	object:SetAttribute("CursorHovered", false)
-	object:SetAttribute("CursorPressed", false)
+	object:SetAttribute("VertexHovered", false)
+	object:SetAttribute("VertexPressed", false)
 	Primitives.SetButtonVisual(
 		object,
 		background,
@@ -176,20 +175,20 @@ function Primitives.Button(parent: Instance, text: string, width: number, varian
 		if not object.Active then
 			return
 		end
-		object:SetAttribute("CursorHovered", true)
+		object:SetAttribute("VertexHovered", true)
 		renderButtonVisual(object, true)
 	end)
 	object.MouseLeave:Connect(function()
-		object:SetAttribute("CursorHovered", false)
-		object:SetAttribute("CursorPressed", false)
+		object:SetAttribute("VertexHovered", false)
+		object:SetAttribute("VertexPressed", false)
 		renderButtonVisual(object, true)
 	end)
 	object.MouseButton1Down:Connect(function()
-		object:SetAttribute("CursorPressed", true)
+		object:SetAttribute("VertexPressed", true)
 		renderButtonVisual(object, false)
 	end)
 	object.MouseButton1Up:Connect(function()
-		object:SetAttribute("CursorPressed", false)
+		object:SetAttribute("VertexPressed", false)
 		renderButtonVisual(object, true)
 	end)
 	object.SelectionGained:Connect(function()
@@ -216,8 +215,8 @@ function Primitives.Input(parent: Instance, placeholder: string, width: number):
 		PlaceholderColor3 = Theme.TextFaint,
 		Text = "",
 		TextColor3 = Theme.Text,
-		TextSize = 10,
-		Font = Enum.Font.Gotham,
+		TextSize = 14,
+		Font = Enum.Font.SourceSans,
 		TextXAlignment = Enum.TextXAlignment.Left,
 	}, parent)
 	Primitives.Corner(box, Theme.RadiusSmall)
@@ -429,10 +428,10 @@ function Primitives.SetCanvasGroupVisible(group: CanvasGroup, visible: boolean, 
 	local motionDisabled = reduceMotion == true or Theme.ReduceMotion == true or Theme.AnimationsEnabled == false
 	local duration = if motionDisabled then 0 else Theme.MotionNormal
 
-	local rawToken = group:GetAttribute("CursorVisibilityToken")
+	local rawToken = group:GetAttribute("VertexVisibilityToken")
 	local token = (if typeof(rawToken) == "number" then rawToken else 0) + 1
-	group:SetAttribute("CursorVisibilityToken", token)
-	group:SetAttribute("CursorTargetVisible", visible)
+	group:SetAttribute("VertexVisibilityToken", token)
+	group:SetAttribute("VertexTargetVisible", visible)
 	group.Interactable = visible
 
 	if visible then
@@ -461,16 +460,16 @@ function Primitives.SetCanvasGroupVisible(group: CanvasGroup, visible: boolean, 
 		if not group.Parent then
 			return
 		end
-		if group:GetAttribute("CursorVisibilityToken") ~= token then
+		if group:GetAttribute("VertexVisibilityToken") ~= token then
 			return
 		end
-		if group:GetAttribute("CursorTargetVisible") == false then
+		if group:GetAttribute("VertexTargetVisible") == false then
 			group.Visible = false
 		end
 	end)
 end
 
-function Primitives.AttachTooltip(gui: GuiObject, screenGui: ScreenGui, text: string, reduceMotion: () -> boolean)
+function Primitives.AttachTooltip(gui: GuiObject, widget: DockWidgetPluginGui, text: string, enabled: () -> boolean)
 	local tooltip = make("CanvasGroup", {
 		Name = "Tooltip",
 		BackgroundColor3 = Theme.Overlay,
@@ -478,129 +477,45 @@ function Primitives.AttachTooltip(gui: GuiObject, screenGui: ScreenGui, text: st
 		GroupTransparency = 1,
 		Visible = false,
 		Interactable = false,
-		Size = UDim2.fromOffset(math.max(64, #text * 6 + 18), 26),
-		ZIndex = 500,
-	}, screenGui)
-	tooltip:SetAttribute("CursorTooltip", true)
+		Size = UDim2.fromOffset(math.max(80, #text * 7 + 18), 26),
+		ZIndex = 910,
+	}, widget)
 	Primitives.Corner(tooltip, Theme.RadiusSmall)
 	Primitives.Stroke(tooltip, Theme.BorderSoft)
 
-	local label = Primitives.Label(tooltip, text, 9, Theme.TextMuted, false)
+	local label = Primitives.Label(tooltip, text, 10, Theme.Text, false)
 	label.Position = UDim2.fromOffset(8, 0)
 	label.Size = UDim2.new(1, -16, 1, 0)
-	label.ZIndex = 501
 
 	local hoverToken = 0
-	local hovering = false
-	local watchConnection: RBXScriptConnection? = nil
-	local destroyed = false
-
-	local function disconnectWatch()
-		if watchConnection then
-			watchConnection:Disconnect()
-			watchConnection = nil
-		end
-	end
-
-	local function isEffectivelyVisible(): boolean
-		if destroyed or not screenGui.Enabled or not gui:IsDescendantOf(screenGui) then
-			return false
-		end
-
-		local current: Instance? = gui
-		while current and current ~= screenGui do
-			if current:IsA("GuiObject") and not current.Visible then
-				return false
-			end
-			if current:IsA("CanvasGroup") and current.GroupTransparency >= 0.995 then
-				return false
-			end
-			current = current.Parent
-		end
-
-		return current == screenGui and gui.AbsoluteSize.X > 0 and gui.AbsoluteSize.Y > 0
-	end
-
-	local function isMouseInside(): boolean
-		local mouse = UserInputService:GetMouseLocation()
-		local position = gui.AbsolutePosition
-		local size = gui.AbsoluteSize
-		return mouse.X >= position.X
-			and mouse.X <= position.X + size.X
-			and mouse.Y >= position.Y
-			and mouse.Y <= position.Y + size.Y
-	end
-
-	local function hideTooltip()
-		disconnectWatch()
+	local function hide()
+		hoverToken += 1
 		if tooltip.Parent then
-			-- Tooltips are transient; hide immediately so stale hints never linger.
 			Primitives.SetCanvasGroupVisible(tooltip, false, true)
 		end
 	end
 
-	local function startWatch()
-		disconnectWatch()
-		watchConnection = RunService.Heartbeat:Connect(function()
-			if not hovering or not isEffectivelyVisible() or not isMouseInside() then
-				hovering = false
-				hoverToken += 1
-				hideTooltip()
-			end
-		end)
-	end
-
 	gui.MouseEnter:Connect(function()
-		hovering = true
 		hoverToken += 1
 		local token = hoverToken
-
-		task.delay(0.38, function()
-			if destroyed or token ~= hoverToken or not hovering or not isEffectivelyVisible() or not isMouseInside() then
+		task.delay(0.35, function()
+			if token ~= hoverToken or not gui.Parent or not widget.Enabled or not enabled() then
 				return
 			end
-
-			-- Only one tooltip may be visible at a time.
-			for _, child in screenGui:GetChildren() do
-				if child ~= tooltip and child:IsA("CanvasGroup") and child:GetAttribute("CursorTooltip") == true then
-					Primitives.SetCanvasGroupVisible(child, false, true)
-				end
-			end
-
-			local viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
-			local x = math.clamp(
-				gui.AbsolutePosition.X + gui.AbsoluteSize.X * 0.5 - tooltip.AbsoluteSize.X * 0.5,
-				6,
-				math.max(6, viewport.X - tooltip.AbsoluteSize.X - 6)
-			)
-			local y = gui.AbsolutePosition.Y + gui.AbsoluteSize.Y + 6
-			if y + tooltip.AbsoluteSize.Y > viewport.Y - 6 then
-				y = gui.AbsolutePosition.Y - tooltip.AbsoluteSize.Y - 6
-			end
-
-			tooltip.Position = UDim2.fromOffset(x, math.max(6, y))
-			Primitives.SetCanvasGroupVisible(tooltip, true, reduceMotion())
-			startWatch()
+			local position = gui.AbsolutePosition - widget.AbsolutePosition
+			local x = math.clamp(position.X, 4, math.max(4, widget.AbsoluteSize.X - tooltip.AbsoluteSize.X - 4))
+			tooltip.Position = UDim2.fromOffset(x, position.Y + gui.AbsoluteSize.Y + 4)
+			Primitives.SetCanvasGroupVisible(tooltip, true)
 		end)
 	end)
-
-	gui.MouseLeave:Connect(function()
-		hovering = false
-		hoverToken += 1
-		hideTooltip()
-	end)
-
+	gui.MouseLeave:Connect(hide)
+	local visibilityConnection = widget:GetPropertyChangedSignal("Enabled"):Connect(hide)
 	gui.Destroying:Connect(function()
-		destroyed = true
-		hovering = false
-		hoverToken += 1
-		disconnectWatch()
-		if tooltip.Parent then
-			tooltip:Destroy()
-		end
+		visibilityConnection:Disconnect()
+		hide()
+		tooltip:Destroy()
 	end)
 end
-
 
 function Primitives.Divider(parent: Instance, vertical: boolean?): Frame
 	return make("Frame", {
@@ -646,8 +561,8 @@ function Primitives.Badge(parent: Instance, text: string, tone: string?): TextLa
 		Size = UDim2.fromOffset(0, 20),
 		Text = text,
 		TextColor3 = color,
-		TextSize = 8,
-		Font = Enum.Font.GothamMedium,
+		TextSize = 12,
+		Font = Enum.Font.SourceSansBold,
 	}, parent)
 	Primitives.Corner(badge, Theme.RadiusSmall)
 	make("UIPadding", {
@@ -692,8 +607,8 @@ function Primitives.SearchInput(parent: Instance, placeholder: string, width: nu
 		PlaceholderColor3 = Theme.TextFaint,
 		Text = "",
 		TextColor3 = Theme.Text,
-		TextSize = 10,
-		Font = Enum.Font.Gotham,
+		TextSize = 14,
+		Font = Enum.Font.SourceSans,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Position = UDim2.fromOffset(31, 0),
 		Size = UDim2.new(1, -39, 1, 0),
@@ -747,7 +662,7 @@ end
 function Primitives.SetButtonEnabled(object: TextButton, enabled: boolean)
 	object.Active = enabled
 	object.Selectable = enabled
-	object:SetAttribute("CursorDisabled", not enabled)
+	object:SetAttribute("VertexDisabled", not enabled)
 	if enabled then
 		object.TextTransparency = 0
 		Primitives.RefreshButtonVisual(object, false)

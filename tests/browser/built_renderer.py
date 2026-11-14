@@ -29,7 +29,7 @@ def mount_built(page, *, offline=False, preferences=None):
     for font in (dist / 'assets').glob('*.ttf'):
         css = css.replace('./' + font.name, data_uri(font))
     html = html.replace('</head>', '<style>' + css + '</style></head>')
-    html = html.replace('./CursorIcon.png', data_uri(dist / 'CursorIcon.png'))
+    html = html.replace('./RoGoal.png', data_uri(dist / 'RoGoal.png'))
     source = (dist / entry.removeprefix('./')).read_text(encoding='utf-8')
     workers = {p.name: p.read_text(encoding='utf-8') for p in (dist / 'assets').glob('*worker*.js')}
     page.set_content(html, wait_until='domcontentloaded')

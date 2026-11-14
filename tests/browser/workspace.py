@@ -153,8 +153,8 @@ def test_minimum_size_and_themes(page):
     expect(page.locator('#pairingCode')).to_have_text('432987')
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     page.locator('#themeToggle').click()
-    for theme in ('graphite','midnight','aurora','obsidian','cursor'):
-        page.locator('#themeOptions .theme-option').filter(has_text=theme.title()).click()
+    for theme in ('graphite','midnight','aurora','obsidian','cursor','studio'):
+        page.locator('#themeOptions .theme-option').filter(has_text='Slate' if theme == 'cursor' else theme.title()).click()
         expect(page.locator('body')).to_have_attribute('data-theme',theme)
         page.locator('#themeToggle').click()
     page.keyboard.press('Escape')

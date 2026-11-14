@@ -21,7 +21,7 @@ def test_compact_chrome(page):
     for width, height in ((1080, 700), (1000, 620), (840, 540), (720, 504)):
         page.set_viewport_size({'width': width, 'height': height})
         mount_built(page, offline=True)
-        expect(page.locator('body')).to_have_attribute('data-theme', 'obsidian')
+        expect(page.locator('body')).to_have_attribute('data-theme', 'studio')
         expect(page.locator('#workspaceSummary')).to_be_hidden()
         expect(page.locator('#welcomeTitle')).to_have_text('Connect to Roblox Studio')
         expect(page.locator('#dashboardBrowse')).to_be_disabled()
@@ -36,7 +36,7 @@ def test_compact_chrome(page):
         page.keyboard.press('Escape')
         page.locator('#themeToggle').click()
         inside_viewport(page, '#themePanel')
-        expect(page.locator('#themeOptions button').first).to_contain_text('Obsidian')
+        expect(page.locator('#themeOptions button').first).to_contain_text('Studio')
         assert 'Discord' not in page.locator('#themePanel').inner_text()
         page.keyboard.press('Escape')
         # Fresh page content must not accumulate listeners from previous mounts.
@@ -44,7 +44,7 @@ def test_compact_chrome(page):
 
 
 def test_theme_preference_migration(page):
-    for stored, expected in (('discord', 'cursor'), ('obsidian', 'obsidian'), ('midnight', 'midnight'), ('__proto__', 'obsidian')):
+    for stored, expected in (('discord', 'cursor'), ('obsidian', 'obsidian'), ('midnight', 'midnight'), ('__proto__', 'studio')):
         mount_built(page, offline=True, preferences={
             'cursor-bridge-theme': stored,
             'cursor-bridge-code-theme': stored,

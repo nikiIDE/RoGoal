@@ -43,7 +43,7 @@ test('native window uses computed work area with sandbox and context isolation i
   assert.match(main,/nodeIntegration: false/);
   assert.match(main,/contextIsolation: true/);
   assert.match(main,/sandbox: true/);
-  assert.match(main,/windowStyleForTheme\('obsidian'\)/);
+  assert.match(main,/windowStyleForTheme\('studio'\)/);
 });
 
 test('all UI glyphs use a single neutral outline family and reject inherited keys', async () => {
@@ -61,25 +61,21 @@ test('all UI glyphs use a single neutral outline family and reject inherited key
 test('home is text-first, all interface labels are English and themes use product names', () => {
   const html=read('index.html');
   assert.match(html,/<html lang="en">/);
-  assert.match(html,/<body data-theme="obsidian">/);
+  assert.match(html,/<body data-theme="studio">/);
   assert.doesNotMatch(html,/Discord|sparkles|dashboard-kicker|compose-symbol|dashboard-signoff/);
   for (const id of ['dashboardBrowse','dashboardCompose','dashboardSearch','dashboardRecovery','dashboardLayout']) {
     assert.match(html,new RegExp('id="'+id+'"'));
   }
-  assert.match(html,/<option value="cursor">Cursor<\/option>/);
+  assert.match(html,/<option value="studio">Studio<\/option>/);
   assert.match(html,/id="layoutToggle"[^>]*>Layout<\/button>/);
   assert.match(html,/id="themeToggle"[^>]*>Appearance<\/button>/);
 });
 
-test('plugin restores the original Obsidian palette first and migrates only the old default', () => {
+test('plugin applies the shared Studio widget palette by default', () => {
   const theme=read('plugin/source/UI/Theme.lua');
-  assert.match(read('plugin/source/Config/Defaults.lua'),/Theme = "Obsidian"/);
-  assert.match(theme,/Theme.PresetNames = table.freeze\(\{"Obsidian", "Cursor",/);
-  assert.match(theme,/Discord = "Obsidian"/);
-  assert.match(theme,/Theme.ApplyPreset\("Obsidian"\)/);
-  assert.match(theme,/Obsidian = \{\s*Background = Color3.fromRGB\(4, 4, 5\)/);
-  assert.doesNotMatch(theme,/"Discord"/);
-  assert.match(read('plugin/source/Core/ThemeService.lua'),/if applied ~= preset then/);
+  assert.match(read("plugin/source/Config/Defaults.lua"), /Theme = "Studio"/);
+  assert.match(theme, /Studio = \{\s*Background = Color3.fromRGB\(37, 37, 37\)/);
+  assert.match(theme, /Theme.ApplyPreset\("Studio"\)/);
 });
 
 test('release documentation is bilingual and every package version agrees', () => {
@@ -88,7 +84,7 @@ test('release documentation is bilingual and every package version agrees', () =
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
   assert.equal(lock.version, pkg.version);
   assert.equal(lock.packages[''].version, pkg.version);
-  assert.ok(notes.startsWith(`# Cursor Bridge v${pkg.version} - `));
+  assert.ok(notes.startsWith(`# RoGoal v${pkg.version} - `));
   assert.match(notes,/^## PT-BR$/m);
   assert.match(notes,/^## English$/m);
   assert.ok(read('plugin/source/Config/Defaults.lua').includes(`Version = "${pkg.version}"`));

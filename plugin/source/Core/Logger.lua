@@ -4,7 +4,7 @@ local Logger = {}
 Logger.__index = Logger
 
 export type Logger = typeof(setmetatable({
-	_prefix = "Cursor",
+	_prefix = "RoGoal",
 	_debugEnabled = false,
 }, Logger))
 

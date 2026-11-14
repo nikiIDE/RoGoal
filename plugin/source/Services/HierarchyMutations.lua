@@ -162,7 +162,7 @@ function HierarchyMutations.Execute(command: any, instances: {[string]: Instance
 	if (action == "create" or action == "rename") and not validName(command.name) then
 		return {type = "mutationResult", opId = command.opId, status = "error", results = {}}
 	end
- 	if action == "delete" then
+	if action == "delete" then
 		-- A backup is only safe if every current Studio source matches the
 		-- backed-up source snapshot before this command was queued.
 		if typeof(command.protectedScripts) ~= "table" or #command.protectedScripts > 200 then
@@ -202,7 +202,7 @@ function HierarchyMutations.Execute(command: any, instances: {[string]: Instance
 	end
 	local historyId: string? = nil
 	local began, historyResult = pcall(function()
-		return ChangeHistoryService:TryBeginRecording("CursorBridge_" .. HttpService:GenerateGUID(false), "Cursor Bridge: " .. action)
+		return ChangeHistoryService:TryBeginRecording("CursorBridge_" .. HttpService:GenerateGUID(false), "RoGoal: " .. action)
 	end)
 	if began then historyId = historyResult end
 

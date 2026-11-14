@@ -53,11 +53,7 @@ class PluginBuildTests(unittest.TestCase):
         self.assertNotIn("<null />", data)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
-class CursorV2CompatibilityTests(unittest.TestCase):
+class RoGoalCompatibilityTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         build_plugin.main()
@@ -84,38 +80,39 @@ class CursorV2CompatibilityTests(unittest.TestCase):
         }
         self.assertEqual(set(groups), set(build_plugin.MODULE_GROUPS))
         for group, modules in build_plugin.MODULE_GROUPS.items():
-            self.assertEqual(groups[group], set(modules))
+            expected = set(modules) | ({'MainGui'} if group == 'UI' else set())
+            self.assertEqual(groups[group], expected)
 
-    def test_plugin_uses_floating_core_gui_not_dock_widget(self):
-        window = (build_plugin.SOURCE / 'UI/BridgeWindow.lua').read_text(encoding='utf-8')
-        self.assertIn('game:GetService("CoreGui")', window)
-        self.assertIn('make("ScreenGui"', window)
-        self.assertIn('Primitives.Corner', window)
-        self.assertIn('GetCloseRequestedSignal', window)
-        self.assertIn('GetVisibilityChangedSignal', window)
-        self.assertIn('UserInputService:GetMouseLocation()', window)
-        self.assertIn('ResizeGrip', window)
-        self.assertNotIn('DockWidget', window)
-        self.assertNotIn('CreateDockWidget', window)
+    def test_plugin_uses_reference_gui_in_a_docked_widget(self):
+        main = (build_plugin.SOURCE / "Main.lua").read_text(encoding="utf-8")
+        window = (build_plugin.SOURCE / "UI/BridgeWindow.lua").read_text(encoding="utf-8")
+        self.assertIn("CreateDockWidgetPluginGuiAsync", main)
+        self.assertIn("Layout.Mount(widget)", window)
+        model = self.root.find("Item")
+        self.assertEqual(model.findtext("Properties/string[@name='Name']"), "RoGoal")
+        self.assertEqual(model.findtext("Item[@class='Script']/Properties/token[@name='RunContext']"), "3")
+        gui = next(
+            item for item in model.iter("Item")
+            if item.findtext("Properties/string[@name='Name']") == "MainGui"
+        )
+        names = {item.findtext("Properties/string[@name='Name']") for item in gui.iter("Item")}
+        self.assertTrue({"TabBar", "InnerFrame", "ScrollBarBackground"}.issubset(names))
+        self.assertIn("rbxassetid://109411031865823", {uri.text for uri in gui.iter("uri")})
 
-    def test_cursor_icon_matches_toolbar_and_window(self):
-        for path in ('Main.lua', 'UI/BridgeWindow.lua'):
-            source = (build_plugin.SOURCE / path).read_text(encoding='utf-8')
-            self.assertIn('rbxassetid://132318313203288', source)
-
-    def test_shared_cursor_modules_have_required_contracts(self):
+    def test_toolbar_and_reference_tabs_use_the_product_icon(self):
         source = build_plugin.SOURCE
-        self.assertIn('function CursorShell.new(', (source / 'UI/CursorShell.lua').read_text())
-        self.assertIn('function Primitives.Button(', (source / 'UI/Primitives.lua').read_text())
-        self.assertIn('function Theme.ApplyPreset(', (source / 'UI/Theme.lua').read_text())
-        self.assertIn('SettingsService.new(', (source / 'Controllers/BridgeController.lua').read_text())
-        self.assertIn('CursorShell.new(', (source / 'Controllers/BridgeController.lua').read_text())
+        self.assertIn("rbxassetid://109411031865823", (source / "Config/Product.lua").read_text())
+        self.assertIn("Product.Icon", (source / "Main.lua").read_text())
+        self.assertIn("icon.Image = Product.Icon", (source / "UI/ReferenceLayout.lua").read_text())
 
     def test_visibility_and_lifecycle_are_wired(self):
-        main = (build_plugin.SOURCE / 'Main.lua').read_text(encoding='utf-8')
-        ctrl = (build_plugin.SOURCE / 'Controllers/BridgeController.lua').read_text(encoding='utf-8')
-        self.assertIn('controller:GetVisibilityChangedSignal()', main)
-        self.assertIn('pluginContext.Unloading:Connect(', main)
-        self.assertIn('RunService:IsRunning()', main)
-        self.assertIn('window:SetVisible(not window:IsVisible())', ctrl)
-        self.assertIn('service:Destroy()', ctrl)
+        main = (build_plugin.SOURCE / "Main.lua").read_text(encoding="utf-8")
+        ctrl = (build_plugin.SOURCE / "Controllers/BridgeController.lua").read_text(encoding="utf-8")
+        self.assertIn('GetPropertyChangedSignal("Enabled")', main)
+        self.assertIn("pluginContext.Unloading:Connect(", main)
+        self.assertIn("RunService:IsEdit()", main)
+        self.assertIn("service:Destroy()", ctrl)
+
+
+if __name__ == "__main__":
+    unittest.main()

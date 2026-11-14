@@ -1,10 +1,10 @@
 $ErrorActionPreference = 'Stop'
 $ProjectDirectory = Split-Path -Parent $PSScriptRoot
-$Source = Join-Path $ProjectDirectory 'CursorBridgeV2.rbxmx'
+$Source = Join-Path $ProjectDirectory 'RoGoal.rbxmx'
 $TargetDirectory = Join-Path $env:LOCALAPPDATA 'Roblox\Plugins'
 
 if (-not (Test-Path -LiteralPath $Source)) {
-    throw 'CursorBridgeV2.rbxmx was not found. Run python scripts/build_plugin.py first.'
+    throw 'RoGoal.rbxmx was not found. Run python scripts/build_plugin.py first.'
 }
 
 # Reject malformed exports before Studio attempts to load them.
@@ -30,12 +30,12 @@ if (-not $PluginXml.SelectSingleNode('/roblox/Item[@class="Model"]/Item[@class="
 
 New-Item -ItemType Directory -Path $TargetDirectory -Force | Out-Null
 $OtherVersions = @(Get-ChildItem -LiteralPath $TargetDirectory -Filter 'CursorBridgeV2*.rbxmx' -File |
-    Where-Object { $_.Name -ne 'CursorBridgeV2.rbxmx' })
+    Where-Object { $_.Name -ne 'RoGoal.rbxmx' })
 if ($OtherVersions.Count -gt 0) {
     Write-Warning 'Other Cursor Bridge plugin files were found. Remove old variants to avoid duplicate toolbar buttons:'
     foreach ($Item in $OtherVersions) { Write-Warning "  $($Item.FullName)" }
 }
-$Target = Join-Path $TargetDirectory 'CursorBridgeV2.rbxmx'
+$Target = Join-Path $TargetDirectory 'RoGoal.rbxmx'
 Copy-Item -LiteralPath $Source -Destination $Target -Force
-Write-Host "Cursor Bridge installed at $Target"
-Write-Host 'Restart Roblox Studio and use Plugins > Cursor Bridge V2.'
+Write-Host "RoGoal installed at $Target"
+Write-Host 'Restart Roblox Studio and use Plugins > RoGoal.'

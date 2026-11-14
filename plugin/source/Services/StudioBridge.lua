@@ -114,7 +114,7 @@ function StudioBridge:_request(endpoint: string, body: any, token: string?): any
 		return HttpService:JSONDecode(response.Body)
 	end)
 	if not decodedOK or typeof(decoded) ~= "table" then
-		error("Cursor Bridge returned an invalid response.")
+		error("RoGoal returned an invalid response.")
 	end
 	if not response.Success or decoded.ok ~= true then
 		error(string.format("Bridge HTTP %s: %s", tostring(response.StatusCode), tostring(decoded.error)))
@@ -151,11 +151,11 @@ function StudioBridge:_editorSource(instance: Instance): string?
 		return ScriptEditorService:GetEditorSource(instance :: LuaSourceContainer)
 	end)
 	if not success or typeof(source) ~= "string" then
-		warn("[Cursor Bridge] Could not read script: " .. instance:GetFullName())
+		warn("[RoGoal] Could not read script: " .. instance:GetFullName())
 		return nil
 	end
 	if #source > Defaults.MaxScriptBytes then
-		warn("[Cursor Bridge] Script exceeds the source size limit: " .. instance:GetFullName())
+		warn("[RoGoal] Script exceeds the source size limit: " .. instance:GetFullName())
 		return nil
 	end
 	return source
@@ -582,7 +582,7 @@ function StudioBridge:_queueCommand(command: any)
 					reply = {type = "childrenPage", opId = nextCommand.opId, parentId = nextCommand.parentId, offset = nextCommand.offset, invalidated = true}
 				end
 				table.insert(self._results, reply)
-				warn("[Cursor Bridge] Command failed: " .. tostring(problem))
+				warn("[RoGoal] Command failed: " .. tostring(problem))
 			end
 			-- The operation result must precede deduplication-cache cleanup.
 			self:_enqueueOperation({type = "commandDone", opId = nextCommand.opId})
@@ -716,7 +716,7 @@ function StudioBridge:_applyCommand(command: any)
 			return ScriptEditorService:OpenScriptDocumentAsync(instance :: LuaSourceContainer, {})
 		end)
 		result.status = if success and opened then "applied" else "error"
-		if result.status == "error" then warn("[Cursor Bridge] Open failed: " .. tostring(message)) end
+		if result.status == "error" then warn("[RoGoal] Open failed: " .. tostring(message)) end
 	elseif command.type == "write" and typeof(command.expectedSource) == "string" and typeof(command.newSource) == "string" then
 		local before = self:_editorSource(instance)
 		if before ~= command.expectedSource then
@@ -743,7 +743,7 @@ function StudioBridge:_applyCommand(command: any)
 			else
 				result.status = if succeeded then "conflict" else "error"
 				result.source = after
-				warn("[Cursor Bridge] Studio edit not applied: " .. tostring(message))
+				warn("[RoGoal] Studio edit not applied: " .. tostring(message))
 			end
 		end
 	end
@@ -801,7 +801,7 @@ function StudioBridge:_syncLoop()
 			local rateLimited = string.find(string.lower(message), "requests exceeded limit", 1, true) ~= nil
 				or string.find(message, "429", 1, true) ~= nil
 			if os.clock() >= nextLog then
-				warn("[Cursor Bridge] " .. message)
+				warn("[RoGoal] " .. message)
 				self:_notify(if rateLimited then "Studio HTTP budget exhausted; retrying automatically..."
 					else "Connection interrupted; retrying automatically...")
 				nextLog = os.clock() + 60

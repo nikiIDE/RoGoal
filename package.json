@@ -1,6 +1,6 @@
 {
-  "name": "cursor-bridge",
-  "version": "0.4.2",
+  "name": "rogoal",
+  "version": "0.5.0",
   "description": "Local Roblox Studio-to-Windows Luau bridge with two-way synchronization and backups",
   "private": true,
   "author": "Cursor Bridge Contributors",
@@ -32,8 +32,8 @@
     "vite": "8.3.4"
   },
   "build": {
-    "appId": "com.cursor.bridge",
-    "productName": "Cursor Bridge",
+    "appId": "com.nikiide.rogoal",
+    "productName": "RoGoal",
     "directories": {
       "output": "release"
     },
@@ -46,7 +46,7 @@
       "shared/**/*"
     ],
     "win": {
-      "icon": "assets/CursorIcon.ico",
+      "icon": "assets/RoGoal.ico",
       "target": [
         {
           "target": "nsis",
@@ -55,7 +55,7 @@
           ]
         }
       ],
-      "artifactName": "Cursor-Bridge-Setup-${version}.${ext}"
+      "artifactName": "RoGoal-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -66,10 +66,14 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "nikis-gif",
-        "repo": "CursorBridge",
+        "owner": "nikiIDE",
+        "repo": "RoGoal",
         "releaseType": "release"
       }
     ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nikiIDE/RoGoal.git"
   }
 }

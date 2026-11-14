@@ -150,7 +150,7 @@ function QuickApply.Execute(command: any, instances: {[string]: Instance}, manag
 		return result
 	end
 	local began, recording = pcall(function()
-		return ChangeHistoryService:TryBeginRecording("CursorBridge_QuickApply_" .. HttpService:GenerateGUID(false), "Cursor Bridge: Quick Apply")
+		return ChangeHistoryService:TryBeginRecording("CursorBridge_QuickApply_" .. HttpService:GenerateGUID(false), "RoGoal: Quick Apply")
 	end)
 	if not began or typeof(recording) ~= "string" then
 		table.insert(result.results, {index = -1, status = "error", message = "Studio could not start undo recording."})

@@ -10,8 +10,7 @@ local SettingsService = require(Root.Core.SettingsService)
 local ThemeService = require(Root.Core.ThemeService)
 local CommandService = require(Root.Core.CommandService)
 local ShortcutService = require(Root.Core.ShortcutService)
-local NotificationService = require(Root.Core.NotificationService)
-local CursorShell = require(Root.UI.CursorShell)
+local VertexShell = require(Root.UI.VertexShell)
 
 local BridgeController = {}
 BridgeController.__index = BridgeController
@@ -21,28 +20,27 @@ local function messageText(value: any): string
 	return content:match("([^\n]+)$") or content
 end
 
-function BridgeController.new(pluginObject: Plugin)
-	local settings = SettingsService.new(pluginObject, "CursorBridge", Defaults)
+function BridgeController.new(pluginObject: Plugin, widget: DockWidgetPluginGui)
+	local settings = SettingsService.new(pluginObject, Defaults)
 	local themeService = ThemeService.new(settings, Theme)
 	themeService:Initialize()
 
-	local window = BridgeWindow.new(pluginObject)
+	local window = BridgeWindow.new(widget)
 	local service = StudioBridge.new()
 	local commands = CommandService.new()
-	local shortcuts = ShortcutService.new()
-	local notifications = NotificationService.new(window:GetScreenGui())
-	local shell = CursorShell.new(
-		window:GetScreenGui(),
+	local shortcuts = ShortcutService.new(pluginObject, widget)
+	themeService:SetPreset(themeService:GetActivePreset(), widget)
+	local shell = VertexShell.new(
+		widget,
 		window:GetWindow(),
 		settings,
 		themeService,
 		commands,
 		shortcuts,
-		notifications
+		function(message, isError) window:SetStatus(message, isError) end
 	)
 
 	return setmetatable({
-		_plugin = pluginObject,
 		_maid = Maid.new(),
 		_window = window,
 		_service = service,
@@ -50,7 +48,6 @@ function BridgeController.new(pluginObject: Plugin)
 		_themeService = themeService,
 		_commandService = commands,
 		_shortcutService = shortcuts,
-		_notificationService = notifications,
 		_shell = shell,
 		_busy = false,
 		_destroyed = false,
@@ -66,7 +63,7 @@ function BridgeController:_connect()
 
 	local pairingCode = string.gsub(window.CodeBox.Text, "%s", "")
 	if not pairingCode:match("^%d%d%d%d%d%d$") then
-		window:SetStatus("Enter the six-digit pairing code from Windows.")
+		window:SetStatus("Enter the six-digit pairing code from Windows.", true)
 		return
 	end
 
@@ -91,15 +88,9 @@ function BridgeController:_connect()
 		window:SetConnected(success or service:IsConnected())
 		if success then
 			window:SetStatus("Connected. Synchronizing the Explorer...")
-			if self._notificationService then
-				self._notificationService:Show("Desktop session connected", "success")
-			end
 		else
 			local errorMessage = messageText(if ran then result else connected)
 			window:SetStatus("Connection failed: " .. errorMessage)
-			if self._notificationService then
-				self._notificationService:Show("Desktop pairing failed", "danger")
-			end
 		end
 	end)
 end
@@ -115,9 +106,6 @@ function BridgeController:_disconnect()
 		window:SetConnected(false)
 		window:SetStatus("Disconnected")
 	end
-	if self._notificationService then
-		self._notificationService:Show("Desktop session disconnected")
-	end
 end
 
 function BridgeController:Start()
@@ -129,13 +117,10 @@ function BridgeController:Start()
 		return
 	end
 
-	maid:Give(window:GetCloseRequestedSignal():Connect(function()
-		window:SetVisible(false)
-	end))
-	maid:Give(window.ConnectButton.MouseButton1Click:Connect(function()
+	maid:Give(window.ConnectButton.Activated:Connect(function()
 		self:_connect()
 	end))
-	maid:Give(window.DisconnectButton.MouseButton1Click:Connect(function()
+	maid:Give(window.DisconnectButton.Activated:Connect(function()
 		self:_disconnect()
 	end))
 	maid:Give(window.CodeBox.FocusLost:Connect(function(enterPressed: boolean)
@@ -154,14 +139,14 @@ function BridgeController:Start()
 	maid:Give(commands:Register({
 		id = "bridge.connect",
 		title = "Connect to Desktop",
-		description = "Pair this Studio session with the local Cursor Bridge app",
+		description = "Pair this Studio session with the local RoGoal app",
 		keywords = {"studio", "desktop", "pair", "sync"},
 		action = function() self:_connect() end,
 	}))
 	maid:Give(commands:Register({
 		id = "bridge.disconnect",
 		title = "Disconnect Desktop",
-		description = "Release the active Cursor Bridge session",
+		description = "Release the active RoGoal session",
 		keywords = {"disconnect", "session", "stop"},
 		action = function() self:_disconnect() end,
 	}))
@@ -170,18 +155,6 @@ function BridgeController:Start()
 	window:SetStatus("Disconnected")
 end
 
-function BridgeController:Toggle()
-	local window = self._window
-	if window then
-		window:SetVisible(not window:IsVisible())
-	end
-end
-
-function BridgeController:GetVisibilityChangedSignal(): RBXScriptSignal
-	local window = self._window
-	assert(window, "Bridge window is unavailable")
-	return window:GetVisibilityChangedSignal()
-end
 
 function BridgeController:Destroy()
 	if self._destroyed then
@@ -196,10 +169,6 @@ function BridgeController:Destroy()
 	local shell = self._shell
 	self._shell = nil
 	if shell then shell:Destroy() end
-
-	local notificationService = self._notificationService
-	self._notificationService = nil
-	if notificationService then notificationService:Destroy() end
 
 	local service = self._service
 	self._service = nil

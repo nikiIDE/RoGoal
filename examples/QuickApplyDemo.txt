@@ -10,7 +10,7 @@ CLASS: ModuleScript
 local QuickApplyDemo = {}
 
 function QuickApplyDemo.Greet(): string
-    return "Hello from Cursor Bridge"
+    return "Hello from RoGoal"
 end
 
 return QuickApplyDemo

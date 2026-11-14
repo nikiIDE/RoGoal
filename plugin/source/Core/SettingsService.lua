@@ -1,5 +1,7 @@
 --!strict
 
+local Product = require(script.Parent.Parent.Config.Product)
+
 local SettingsService = {}
 SettingsService.__index = SettingsService
 
@@ -83,11 +85,14 @@ local function validateAgainstDefault(defaults: {[string]: any}, path: string, v
 	return typeof(defaultValue) == typeof(value)
 end
 
-function SettingsService.new(pluginObject: Plugin, pluginId: string, defaults: {[string]: any}): SettingsService
-	local storageKey = string.format("CursorV2.%s.Settings", pluginId)
+function SettingsService.new(pluginObject: Plugin, defaults: {[string]: any}): SettingsService
+	local storageKey = Product.SettingsKey
 	local saved: any = nil
 	local ok = pcall(function()
 		saved = pluginObject:GetSetting(storageKey)
+		if saved == nil then
+			saved = pluginObject:GetSetting("CursorV2.CursorBridge.Settings")
+		end
 	end)
 
 	local data = if ok and typeof(saved) == "table" then deepCopy(saved) else {}
@@ -111,7 +116,7 @@ function SettingsService:_persist()
 		pluginObject:SetSetting(self._storageKey, deepCopy(self._data))
 	end)
 	if not ok then
-		warn(string.format("[Cursor Settings] Failed to persist settings: %s", tostring(err)))
+		warn(string.format("[Vertex Settings] Failed to persist settings: %s", tostring(err)))
 	end
 end
 

@@ -122,6 +122,7 @@ monaco.languages.setMonarchTokensProvider('luau', {
 });
 
 const themePalette = {
+  studio: { background: '252525', fg: 'F2F2F2', keyword: '83C9FC', string: 'AED397', comment: 'A7AAAD' },
   cursor: { background: '202124', fg: 'F2F3F5', keyword: 'B9ACFF', string: '9CDBBE', comment: '969DAE' },
   obsidian: { background: '101013', fg: 'F2F1EF', keyword: 'B6A3D6', string: 'B9CCA6', comment: '858590' },
   graphite: { background: '1B1D21', fg: 'ECEDF0', keyword: 'C1AFDB', string: 'B9CFAD', comment: '777F8C' },
@@ -153,9 +154,9 @@ function readPreference(key) {
 function savePreference(key, value) {
   try { localStorage.setItem(key, value); } catch { /* Appearance persistence must not block editing. */ }
 }
-const themeLabels = { obsidian: 'Obsidian', cursor: 'Cursor', graphite: 'Graphite', midnight: 'Midnight', aurora: 'Aurora' };
-const themeColors = { obsidian: '#0b0b0d', cursor: '#202124', graphite: '#161719', midnight: '#0d121a', aurora: '#0c1517' };
-function normalizeThemeName(name, fallback = 'obsidian') {
+const themeLabels = { studio: 'Studio', obsidian: 'Obsidian', cursor: 'Slate', graphite: 'Graphite', midnight: 'Midnight', aurora: 'Aurora' };
+const themeColors = { studio: '#252525', obsidian: '#0b0b0d', cursor: '#202124', graphite: '#161719', midnight: '#0d121a', aurora: '#0c1517' };
+function normalizeThemeName(name, fallback = 'studio') {
   // Preserve the old palette preference under its new product-specific name.
   if (name === 'discord') name = 'cursor';
   return Object.hasOwn(themeLabels, name) ? name : fallback;
@@ -187,7 +188,7 @@ function renderThemeOptions() {
     $('themeOptions').append(button);
   }
 }
-useTheme(readPreference('cursor-bridge-theme') || 'obsidian');
+useTheme(readPreference('cursor-bridge-theme') || 'studio');
 
 const editor = monaco.editor.create($('monacoHost'), {
   language: 'luau', value: '', theme: `cursor-${codeColorTheme === 'auto' ? document.body.dataset.theme : codeColorTheme}`, 
@@ -445,7 +446,7 @@ function paintTreeWindow(force = false) {
       if (!canMutate() || !ids.length) { event.preventDefault(); return; }
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('application/x-cursor-bridge-nodeids', JSON.stringify(ids));
-      event.dataTransfer.setData('text/plain', `${ids.length} Cursor Bridge instance(s)`);
+      event.dataTransfer.setData('text/plain', `${ids.length} RoGoal instance(s)`);
       row.classList.add('dragging');
     });
     row.addEventListener('dragend', () => {
@@ -1124,11 +1125,11 @@ function updateStatus(status) {
   $('welcomeTitle').textContent = incompatiblePlugin ? 'Update your Studio plugin.' : status.recovering ? 'Reconnecting to Studio.' : ready ? 'Workspace'
     : connected ? 'Preparing your workspace.' : 'Connect to Roblox Studio';
   $('welcomeDescription').textContent = incompatiblePlugin
-    ? 'Install the v0.3.1 Cursor Bridge plugin, disable older copies, and pair again.' : status.recovering
+    ? 'Install the latest RoGoal plugin, disable older copies, and pair again.' : status.recovering
     ? 'Connection interrupted. Local drafts are protected; waiting for your Studio session.' : ready
     ? 'Open a script from Explorer or use a workspace action below.'
     : connected ? 'Reading your place hierarchy. This usually takes a moment.'
-      : 'Enter the pairing code in the Cursor Bridge plugin to start editing.';
+      : 'Enter the pairing code in the RoGoal plugin to start editing.';
   $('welcomeTip').hidden = !ready;
 
   if (previouslyConnected && !connected) {
@@ -1533,7 +1534,7 @@ function openDeleteDialog() {
   const count = currentActionIds.length;
   $('deleteTitle').textContent = `Delete ${count} instance${count === 1 ? '' : 's'}?`;
   $('deleteDescription').textContent =
-    `This also deletes their descendants. Cursor Bridge will back up script sources before sending the request to Studio. The action is verified again in Studio.`;
+    `This also deletes their descendants. RoGoal will back up script sources before sending the request to Studio. The action is verified again in Studio.`;
   $('deleteDialog').showModal();
 }
 $('deleteForm').addEventListener('submit',(event)=>{
@@ -2067,7 +2068,7 @@ const quickApplyFormat = [
   'All script code and comments must be in English.',
   'Use STATUS: MODIFIED only for an existing script and STATUS: NEW for a new one.',
   'For every NEW script also include CLASS: Script, CLASS: LocalScript, or CLASS: ModuleScript.',
-  'If CLASS is omitted for NEW, Cursor Bridge defaults to Script; users can change it in the preview.',
+  'If CLASS is omitted for NEW, RoGoal defaults to Script; users can change it in the preview.',
   'Paths must use forward slashes, beginning at game/Workspace, game/ServerScriptService, etc.',
   'Missing intermediate folders in NEW script paths will be created automatically.',
   'Do not use markdown fences, explanations, or text outside the script blocks.',
@@ -2082,7 +2083,7 @@ const quickApplyFormat = [
   '',
   '--!strict',
   '',
-  'print("Hello from Cursor Bridge")',
+  'print("Hello from RoGoal")',
 ].join('\n');
 
 let quickApplyPreview = null;
@@ -2378,7 +2379,7 @@ workspace = mountWorkspace({
 window.addEventListener('pagehide', () => { workspace?.dispose(); }, { once: true });
 
 async function start() {
-  if (!api) {setFooter('Launch Cursor Bridge through the Windows application.');return;}
+  if (!api) {setFooter('Launch RoGoal through the Windows application.');return;}
   const initialEvents = [];
   let initializing = true;
   api.onEvent((event) => {

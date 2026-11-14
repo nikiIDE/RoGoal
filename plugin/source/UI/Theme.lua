@@ -1,6 +1,6 @@
 --!strict
 
--- Cursor V2 semantic design tokens.
+-- Shared Studio widget palette.
 -- Every plugin consumes this exact contract so visual behavior stays consistent.
 local Theme: {[string]: any} = {}
 
@@ -62,37 +62,24 @@ local BASE: {[string]: Color3} = {
 }
 
 local PRESETS: {[string]: {[string]: Color3}} = {
-	Cursor = {
-		Background = Color3.fromRGB(30, 31, 34),
-		Surface = Color3.fromRGB(49, 51, 56),
-		SurfaceRaised = Color3.fromRGB(43, 45, 49),
-		SurfaceHover = Color3.fromRGB(64, 66, 73),
-		SurfaceActive = Color3.fromRGB(56, 58, 64),
-		SurfaceSelected = Color3.fromRGB(63, 65, 71),
-		SurfaceDisabled = Color3.fromRGB(38, 40, 44),
-		Overlay = Color3.fromRGB(23, 24, 27),
-		GradientTop = Color3.fromRGB(54, 57, 66),
-		GradientBottom = Color3.fromRGB(43, 45, 49),
-		Border = Color3.fromRGB(67, 69, 76),
-		BorderSoft = Color3.fromRGB(57, 59, 65),
-		BorderStrong = Color3.fromRGB(100, 104, 126),
-		Text = Color3.fromRGB(242, 243, 245),
-		TextMuted = Color3.fromRGB(181, 185, 194),
-		TextFaint = Color3.fromRGB(148, 153, 163),
-		TextDisabled = Color3.fromRGB(100, 104, 114),
-		Focus = Color3.fromRGB(214, 217, 224),
-		Accent = Color3.fromRGB(221, 223, 228),
-		AccentHover = Color3.fromRGB(244, 245, 247),
-		AccentSoft = Color3.fromRGB(63, 65, 71),
-		AccentFaint = Color3.fromRGB(38, 40, 44),
-		AccentText = Color3.fromRGB(20, 21, 24),
-		Secondary = Color3.fromRGB(214, 217, 224),
-		SecondarySoft = Color3.fromRGB(43, 45, 50),
-		Success = Color3.fromRGB(105, 217, 176),
-		Warning = Color3.fromRGB(232, 191, 128),
-		Danger = Color3.fromRGB(242, 139, 151),
-		Ring = Color3.fromRGB(214, 217, 224),
-		Selection = Color3.fromRGB(63, 65, 71),
+	Studio = {
+		Background = Color3.fromRGB(37, 37, 37),
+		Surface = Color3.fromRGB(46, 46, 46),
+		SurfaceRaised = Color3.fromRGB(53, 53, 53),
+		SurfaceHover = Color3.fromRGB(62, 62, 62),
+		SurfaceActive = Color3.fromRGB(71, 71, 71),
+		SurfaceSelected = Color3.fromRGB(47, 72, 91),
+		Border = Color3.fromRGB(34, 34, 34),
+		BorderSoft = Color3.fromRGB(32, 32, 32),
+		BorderStrong = Color3.fromRGB(26, 26, 26),
+		Text = Color3.fromRGB(204, 204, 204),
+		TextMuted = Color3.fromRGB(190, 190, 190),
+		TextFaint = Color3.fromRGB(160, 160, 160),
+		Accent = Color3.fromRGB(0, 162, 255),
+		AccentHover = Color3.fromRGB(51, 180, 255),
+		AccentText = Color3.fromRGB(20, 20, 20),
+		AccentSoft = Color3.fromRGB(35, 73, 95),
+		Focus = Color3.fromRGB(105, 194, 247),
 	},
 	Graphite = {},
 	Midnight = {
@@ -225,19 +212,17 @@ local PRESETS: {[string]: {[string]: Color3}} = {
 }
 
 local LEGACY_ALIASES = {
-	-- Migrate the previous default only; retain other explicitly saved palettes.
-	Discord = "Obsidian",
 	Amethyst = "Aurora",
 	Ember = "Obsidian",
 }
 
-Theme.PresetNames = table.freeze({"Obsidian", "Cursor", "Graphite", "Midnight", "Monochrome", "Aurora", "Rainbow"})
-Theme.ActivePreset = "Obsidian"
+Theme.PresetNames = table.freeze({"Studio", "Graphite", "Midnight", "Obsidian", "Monochrome", "Aurora", "Rainbow"})
+Theme.ActivePreset = "Studio"
 Theme.ReduceMotion = false
 Theme.AnimationsEnabled = true
 
-Theme.RadiusSmall = 4
-Theme.RadiusMedium = 6
+Theme.RadiusSmall = 3
+Theme.RadiusMedium = 4
 Theme.RadiusLarge = 8
 Theme.RadiusXLarge = 10
 Theme.ControlHeight = 26
@@ -311,10 +296,10 @@ function Theme.ApplyRainbowHue(hue: number)
 end
 
 function Theme.ApplyPreset(name: string?): string
-	local requested = name or "Obsidian"
+	local requested = name or "Studio"
 	local presetName = LEGACY_ALIASES[requested] or requested
 	if PRESETS[presetName] == nil then
-		presetName = "Obsidian"
+		presetName = "Studio"
 	end
 
 	for key, value in BASE do
@@ -328,6 +313,6 @@ function Theme.ApplyPreset(name: string?): string
 	return presetName
 end
 
-Theme.ApplyPreset("Obsidian")
+Theme.ApplyPreset("Studio")
 
 return Theme
