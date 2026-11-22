@@ -27,6 +27,7 @@ def fixture_page():
 
 def fixture_modules():
     files = {
+        "standby": PROJECT / "renderer/standby.mjs",
         "layout": PROJECT / "renderer/layout-state.mjs",
         "workspace": PROJECT / "renderer/workspace-ui.mjs",
         "tabgroups": PROJECT / "renderer/tab-groups.mjs",
@@ -49,6 +50,7 @@ def fixture_modules():
 
 
 IMPORTS = {
+    "import { mountStandby } from './standby.mjs';": "standby",
     "import { mountWorkspace } from './workspace-ui.mjs';": "workspace",
     "import { primaryTabIds } from './tab-groups.mjs';": "tabgroups",
     "import limits from '../shared/limits.json';": "limits",

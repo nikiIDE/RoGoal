@@ -1,24 +1,6 @@
-/* Workspace surfaces share the graphite and terracotta palette of the design prototype. */
-body[data-theme="studio"] {
-  --bg:#171717; --panel:#202020; --sidebar:#202020; --surface:#2d2d2d;
-  --hover:#343434; --border:#414141; --soft-border:#303030; --text:#efefef;
-  --sub:#c2c2c2; --muted:#a5a5a5; --faint:#919191; --accent:#df8f72;
-  --brand:#df8f72; --brand-hover:#f1a68c; --selection:#39312e;
-  --selection-line:#c68067; --code:#171717;
-}
-body { font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; }
-.app-header { background:var(--panel); padding-inline:16px; }
-.brand-name { display:inline-flex; align-items:center; gap:6px; font-size:15px; font-weight:650; letter-spacing:-.3px; }
-.header-status,.quick-launcher,.header-button { border-radius:9px; }
-.activity-rail { width:54px; min-width:54px; gap:5px; padding:8px 6px; background:var(--sidebar); border-right:1px solid var(--soft-border); }
-.rail-button { width:38px; height:38px; border-radius:9px; }
-.rail-button[aria-pressed=true]::before { display:none; }
-.rail-button[aria-pressed=true] { box-shadow:inset 0 0 0 1px var(--border); }
 .explorer-pane { background:var(--sidebar); }
 .explorer-heading,.editor-topline,.editor-statusbar,.tabs { background:var(--panel); }
-.explorer-heading .side-mode,.tree-row,.tab,.editor-actions .icon-button { border-radius:8px; }
 .tree-row:hover,.tree-row.selected,.tab.active { background:var(--selection); }
-.search-wrap,.place-search-field,.quick-open-input { border-radius:10px; }
 .editor-area { background:var(--bg); }
 .editor-pane .tabs { gap:4px; padding-inline:5px; }
 .editor-pane .tab { margin:3px 0; }
@@ -27,26 +9,18 @@ body { font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; }
 .dashboard-content { max-width:650px; text-align:center; }
 .dashboard-content > p { max-width:none; margin-inline:auto; }
 .welcome-panel h1 { font-family:inherit; font-size:clamp(21px,4vw,37px); font-weight:620; letter-spacing:-.045em; }
-.pairing-card { border-radius:14px; margin-inline:auto; }
-.modal,.floating-panel,.popover,.context-menu,.quick-open-dialog { border-radius:15px; }
+.pairing-card { margin-inline:auto; }
 .modal h2 { font-family:inherit; font-weight:650; }
-.icon-button,.secondary-button,.primary-button,.tool-text { border-radius:9px; }
 .qa-text { background:var(--surface); }
 .qa-footer .primary-button { background:var(--accent); color:var(--bg); border-color:var(--accent); }
 .plugin-help { display:grid; gap:9px; padding:14px; width:100%; border:1px solid var(--border); border-radius:12px; background:var(--panel); }
 .plugin-help[hidden] { display:none; }
-@media (min-width: 1080px) {
-  .activity-rail { width:145px; min-width:145px; align-items:stretch; padding-inline:8px; }
-  .rail-button { width:100%; display:flex; align-items:center; gap:9px; text-align:left; padding:0 8px; }
-  .rail-button .rail-tooltip { position:static; visibility:visible; opacity:1; pointer-events:none; transform:none; padding:0; border:0; box-shadow:none; background:transparent; color:inherit; font-size:11px; white-space:nowrap; }
-}
 @media (max-height: 610px) {
   .welcome-panel { padding-block:9px; }
   .dashboard-content > p { margin-block:6px 8px; }
   .pairing-card { margin-bottom:5px; }
 }
 
-/* The home page has one composer and two project actions. */
 .visually-hidden { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 .dashboard-content { max-width:630px; margin-block:auto; }
 .welcome-panel h1 { margin:0 0 20px; font-size:clamp(23px,3.4vw,36px); }
@@ -82,15 +56,9 @@ body[data-workspace-home=true] #explorerPane,
 body[data-workspace-home=true] #resizeDivider { display:none; }
 
 /* Surface corners and focus spacing share one scale across the workbench. */
-body[data-theme="studio"] {
-  --bg:#191b20; --panel:#20232a; --sidebar:#20232a; --surface:#292d35; --hover:#333844;
-  --border:#414754; --soft-border:#30353f; --text:#f1f3f7; --sub:#c7cdd8; --muted:#a6afbd;
-  --faint:#919bab; --accent:#aec3f6; --brand:#aec3f6; --brand-hover:#c7d6fb;
-  --selection:#323e5a; --selection-line:#91adf1; --code:#191b20;
-}
 body { --control-radius:8px; --surface-radius:12px; font: 13px 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif; }
-.button,.icon-button,.primary-button,.secondary-button,.tool-text,.rail-button,.header-button,.header-status,
-.tree-row,.side-mode,.tab,.search-wrap,.place-search-field,.quick-open-input,.qa-entry-type,.qa-file-button { border-radius:var(--control-radius); }
+.button,.icon-button,.primary-button,.secondary-button,.tool-text,.header-button,.header-status,
+.tree-row,.tab,.search-wrap,.place-search-field,.quick-open-input,.qa-entry-type,.qa-file-button { border-radius:var(--control-radius); }
 .modal,.floating-panel,.context-menu,.quick-open-dialog,.pairing-card,.qa-summary,.plugin-help { border-radius:var(--surface-radius); }
 .app-header,.editor-topline { border-bottom-color:var(--soft-border); }
 .brand-name { letter-spacing:0; }
@@ -141,3 +109,28 @@ body { --control-radius:8px; --surface-radius:12px; font: 13px 'Segoe UI Variabl
   .organization-body { padding-block:9px; gap:9px; }
   .structure-response textarea { min-height:70px; }
 }
+
+/* The rail switches views. The panel header identifies the current view. */
+.explorer-heading { justify-content:space-between; padding-inline:11px 6px; background:var(--sidebar); }
+.explorer-heading h2 { margin:0; color:var(--text); font-size:12px; font-weight:600; line-height:1.3; }
+.explorer-pane { border:0; border-radius:0; }
+.explorer-bottom,.place-search-footer,.app-footer { border:0; }
+.editor-pane .tab { border-right:0; border-radius:var(--radius-control); }
+.group-focused .tab.active::before { display:none; }
+.secondary-pane.group-focused .secondary-tab { box-shadow:none; }
+.place-search-field { margin:0 8px 6px; min-height:32px; border-radius:var(--radius-control); }
+.place-search-field input:focus-visible,.search-wrap input:focus-visible { outline:none; }
+.place-search-field:focus-within,.search-wrap:focus-within input { border-color:var(--selection-line); }
+.place-search-options { display:flex; justify-content:flex-end; gap:3px; margin:0 8px 3px; }
+.search-flag[aria-pressed=true] { border-color:transparent; }
+.place-search-bar { border-bottom:0; }
+.place-search-bar > span { overflow-wrap:anywhere; }
+
+.standby-dialog { position:fixed; inset:0; box-sizing:border-box; width:100%; height:100%; max-width:none; max-height:none; margin:0; padding:24px; border:0; background:#000; color:#ededed; }
+.standby-dialog[open] { display:grid; place-items:center; }
+.standby-dialog::backdrop { background:#000; }
+.standby-content { width:min(100%,410px); text-align:center; }
+.standby-content h1 { margin:0; font-size:22px; font-weight:600; }
+.standby-content p { min-height:2.8em; margin:12px 0 20px; color:#adadad; line-height:1.5; }
+.standby-content button { border-color:#555; background:#151515; color:#ededed; }
+.standby-content button:hover { background:#222; }

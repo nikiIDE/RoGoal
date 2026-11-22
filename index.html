@@ -32,20 +32,17 @@
     </nav>
     <aside class="explorer-pane" id="explorerPane" hidden>
       <div class="explorer-heading">
-        <div class="side-modes" role="tablist" aria-label="Sidebar views">
-          <button id="explorerView" class="side-mode active" type="button" role="tab" aria-selected="true" aria-controls="treeScroller" title="Explorer (Ctrl+Shift+E)">Explorer</button>
-          <button id="placeSearchView" class="side-mode" type="button" role="tab" aria-selected="false" aria-controls="placeSearchPanel" title="Find in Place (Ctrl+Shift+F)"><span>Search</span></button>
-        </div>
+        <h2 id="sidebarTitle">Explorer</h2>
         <div class="toolbar" id="explorerToolbar"><button id="explorerDragHandle" class="icon-button quiet small" draggable="true" title="Drag Explorer to either side, or use Workspace layout" aria-label="Drag Explorer to change its dock position"><span data-icon="grip"></span></button><button class="icon-button quiet" id="newNode" title="Create instance" aria-label="Create instance"><span data-icon="plus"></span></button><button class="icon-button quiet" id="collapseTree" title="Collapse all" aria-label="Collapse all"><span data-icon="collapse"></span></button><button class="icon-button quiet" id="explorerMore" title="Explorer actions" aria-label="Explorer actions"><span data-icon="more"></span></button></div>
       </div>
       <div class="search-wrap" id="explorerFilter"><span data-icon="search"></span><input id="treeSearch" type="search" placeholder="Filter instances" autocomplete="off" spellcheck="false" aria-label="Search instances" /><kbd>Ctrl K</kbd></div>
       <div class="tree-scroller" id="treeScroller" role="tree" aria-label="Roblox Explorer"><div id="tree" class="tree"></div></div>
-      <section class="place-search-panel" id="placeSearchPanel" role="tabpanel" aria-label="Find in Place" hidden>
-        <div class="place-search-top"><label for="placeSearchInput">Find in Place</label><span>ALL SCRIPTS</span></div>
-        <div class="place-search-field"><span data-icon="search"></span><input id="placeSearchInput" type="search" placeholder="Search code in this Place" aria-label="Search code in all scripts" autocomplete="off" spellcheck="false" />
-          <button type="button" class="search-flag" id="searchMatchCase" aria-pressed="false" title="Match case">Aa</button>
-          <button type="button" class="search-flag" id="searchWholeWord" aria-pressed="false" title="Match whole word"><span class="whole-word">ab</span></button>
-          <button type="button" class="search-flag" id="searchRegex" aria-pressed="false" title="Use regular expression">.*</button>
+      <section class="place-search-panel" id="placeSearchPanel" aria-label="Find in Place" hidden>
+        <div class="place-search-field"><span data-icon="search"></span><input id="placeSearchInput" type="search" placeholder="Find in scripts" aria-label="Search code in all scripts" autocomplete="off" spellcheck="false" /></div>
+        <div class="place-search-options" role="group" aria-label="Search options">
+          <button type="button" class="search-flag" id="searchMatchCase" aria-pressed="false" aria-label="Match case" title="Match case">Aa</button>
+          <button type="button" class="search-flag" id="searchWholeWord" aria-pressed="false" aria-label="Match whole word" title="Match whole word"><span class="whole-word">ab</span></button>
+          <button type="button" class="search-flag" id="searchRegex" aria-pressed="false" aria-label="Use regular expression" title="Use regular expression">.*</button>
         </div>
         <div class="place-search-bar"><span id="placeSearchSummary" role="status" aria-live="polite">Search every script in your connected Place.</span><div>
           <button type="button" class="icon-button quiet small" id="placeSearchPrevious" title="Previous match (Shift+F4)" aria-label="Previous match" disabled><span data-icon="chevron-up"></span></button>
@@ -141,6 +138,13 @@
   <div class="marquee" id="marquee" aria-hidden="true" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
+  <dialog id="standbyDialog" class="standby-dialog" aria-labelledby="standbyTitle" aria-describedby="standbyMessage">
+    <div class="standby-content">
+      <h1 id="standbyTitle">RoGoal is on standby</h1>
+      <p id="standbyMessage"></p>
+      <button type="button" class="secondary-button" id="resumeWorkspace" autofocus>Resume workspace</button>
+    </div>
+  </dialog>
   <dialog id="projectContextDialog" class="modal project-context-dialog" aria-labelledby="projectContextTitle">
     <div class="project-context-top">
       <span class="project-context-brand"><span class="project-spark" aria-hidden="true">✦</span> RoGoal</span>

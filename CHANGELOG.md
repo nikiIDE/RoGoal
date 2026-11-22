@@ -1,3 +1,9 @@
+## v0.6.4 - Studio workspace and standby
+
+- Restored the Studio palette and compact navigation.
+- Simplified the Explorer and search panel chrome.
+- Added a standby screen after five minutes of inactivity.
+
 ## v0.6.3 - Dedicated game structure workspace
 
 - Added folder and empty script import in a separate dialog.

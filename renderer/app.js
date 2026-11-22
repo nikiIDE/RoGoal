@@ -5,6 +5,7 @@ import './styles.css';
 import './workspace.css';
 import './vendor/gsap.min.js';
 import './redesign.css';
+import { mountStandby } from './standby.mjs';
 import { mountWorkspace } from './workspace-ui.mjs';
 import { primaryTabIds } from './tab-groups.mjs';
 import { icon } from './icons.js';
@@ -35,7 +36,7 @@ const animatedSurfaces = new MutationObserver(records => {
     if (attributeName === 'open' ? target.open : !target.hidden) playMotion(target);
   }
 });
-for (const surface of document.querySelectorAll('dialog, #welcome, #explorerPane, #codePanel, #secondaryPane, #layoutPanel, #themePanel, #sessionPanel')) {
+for (const surface of document.querySelectorAll('dialog:not(#standbyDialog), #welcome, #explorerPane, #codePanel, #secondaryPane, #layoutPanel, #themePanel, #sessionPanel')) {
   animatedSurfaces.observe(surface, { attributes: true, attributeFilter: ['open', 'hidden'] });
 }
 playMotion(document.querySelector('.dashboard-content'), 12);
@@ -144,7 +145,7 @@ monaco.languages.setMonarchTokensProvider('luau', {
 });
 
 const themePalette = {
-  studio: { background: '191B20', fg: 'F1F3F7', keyword: 'AEC3F6', string: 'AED397', comment: 'A7AAAD' },
+  studio: { background: '252525', fg: 'F2F2F2', keyword: '83C9FC', string: 'AED397', comment: 'A7AAAD' },
   cursor: { background: '202124', fg: 'F2F3F5', keyword: 'B9ACFF', string: '9CDBBE', comment: '969DAE' },
   obsidian: { background: '101013', fg: 'F2F1EF', keyword: 'B6A3D6', string: 'B9CCA6', comment: '858590' },
   graphite: { background: '1B1D21', fg: 'ECEDF0', keyword: 'C1AFDB', string: 'B9CFAD', comment: '777F8C' },
@@ -177,7 +178,7 @@ function savePreference(key, value) {
   try { localStorage.setItem(key, value); } catch { /* Appearance persistence must not block editing. */ }
 }
 const themeLabels = { studio: 'Studio', obsidian: 'Obsidian', cursor: 'Slate', graphite: 'Graphite', midnight: 'Midnight', aurora: 'Aurora' };
-const themeColors = { studio: '#191b20', obsidian: '#0b0b0d', cursor: '#202124', graphite: '#161719', midnight: '#0d121a', aurora: '#0c1517' };
+const themeColors = { studio: '#252525', obsidian: '#0b0b0d', cursor: '#202124', graphite: '#161719', midnight: '#0d121a', aurora: '#0c1517' };
 function normalizeThemeName(name, fallback = 'studio') {
   // Preserve the old palette preference under its new product-specific name.
   if (name === 'discord') name = 'cursor';
@@ -1631,10 +1632,7 @@ function setSidebarView(mode, focusInput = false) {
   $('explorerBottom').hidden = searching;
   $('explorerToolbar').hidden = searching;
   $('placeSearchPanel').hidden = !searching;
-  for (const [id, active] of [['explorerView', !searching], ['placeSearchView', searching]]) {
-    $(id).classList.toggle('active', active);
-    $(id).setAttribute('aria-selected', String(active));
-  }
+  $('sidebarTitle').textContent = searching ? 'Find in Place' : 'Explorer';
   if (searching) {
     if (focusInput) $('placeSearchInput').focus();
     if ($('placeSearchInput').value.trim()) schedulePlaceSearch(0);
@@ -1648,8 +1646,6 @@ function openPlaceSearch() {
   setSidebarView('search', true);
   $('placeSearchInput').select();
 }
-$('explorerView').addEventListener('click', () => setSidebarView('explorer'));
-$('placeSearchView').addEventListener('click', openPlaceSearch);
 
 function cancelPlaceSearch(invalidate = true) {
   clearTimeout(placeSearchTimer);
@@ -1923,6 +1919,7 @@ $('quickOpenResults').addEventListener('keydown',(event)=>{
 });
 // Capture editor-owned shortcuts before Monaco handles them, without replacing Ctrl+F.
 window.addEventListener('keydown',(event) => {
+  if ($('standbyDialog').open) return;
   if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
   const key=event.key.toLowerCase();
   if (key==='p' && !event.shiftKey) {
@@ -2578,6 +2575,7 @@ qa('quickApplyDialog').addEventListener('close', () => {
   if (new TextEncoder().encode(text).length <= limits.maxBundleBytes) api.saveQuickApplyDraft(text).catch(safeError);
 });
 window.addEventListener('keydown', (event) => {
+  if ($('standbyDialog').open) return;
   if (!(event.ctrlKey || event.metaKey) || event.altKey || event.shiftKey || event.key.toLowerCase() !== 'l') return;
   if (document.querySelector('dialog[open]') && !qa('quickApplyDialog').open) return;
   event.preventDefault(); event.stopImmediatePropagation();
@@ -2598,7 +2596,8 @@ workspace = mountWorkspace({
   hidePopovers, toast, safeError, saveDocument: flushStudioWrite,
   onSplitChange: () => renderTabs(),
 });
-window.addEventListener('pagehide', () => { workspace?.dispose(); }, { once: true });
+const disposeStandby = mountStandby($('standbyDialog'), playMotion);
+window.addEventListener('pagehide', () => { disposeStandby(); workspace?.dispose(); }, { once: true });
 
 async function start() {
   if (!api) {setFooter('Launch RoGoal through the Windows application.');return;}

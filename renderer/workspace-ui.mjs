@@ -162,10 +162,10 @@ export function mountWorkspace(adapter) {
     $('editorArea').classList.toggle('is-split', showSecond);
     $('secondaryPane').classList.toggle('group-focused', showSecond && focusedGroup === 'secondary');
     $('primaryPane').classList.toggle('group-focused', !showSecond || focusedGroup === 'primary');
-    const onHome = home || !current;
-    pressed('railHome', onHome);
-    pressed('railExplorer', !onHome && layout.sidebarVisible && state.sidebarMode === 'explorer');
-    pressed('railSearch', !home && layout.sidebarVisible && state.sidebarMode === 'search');
+    const sidebarShown = ready && !home && layout.sidebarVisible;
+    pressed('railHome', !showCode && !sidebarShown);
+    pressed('railExplorer', sidebarShown && state.sidebarMode === 'explorer');
+    pressed('railSearch', sidebarShown && state.sidebarMode === 'search');
     pressed('splitEditor', showSecond);
     $('splitEditor').disabled = !ready || !current;
     $('layoutVertical').disabled = !ready || (!current && !secondaryId);

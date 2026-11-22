@@ -144,11 +144,46 @@ def test_workspace_without_embedded_ai(page):
         page.goto('about:blank')
 
 
+def test_standby_preserves_open_workspace(page):
+    page.clock.install()
+    mount_built(page)
+    expect(page.locator('#sidebarTitle')).to_have_text('Explorer')
+    page.locator('#railSearch').click()
+    expect(page.locator('#sidebarTitle')).to_have_text('Find in Place')
+    expect(page.locator('#placeSearchInput')).to_be_focused()
+    page.locator('#railExplorer').click()
+    expect(page.locator('#sidebarTitle')).to_have_text('Explorer')
+    page.locator('.tree-row[data-id="s1"] .tree-name').click()
+    code = page.locator('#monacoHost .view-lines')
+    expect(code).to_contain_text('hello')
+    dialog = page.locator('#standbyDialog')
+    page.clock.fast_forward(240_000)
+    expect(dialog).to_be_hidden()
+    page.locator('#monacoHost').dispatch_event('pointermove')
+    page.clock.fast_forward(120_000)
+    expect(dialog).to_be_hidden()
+    page.clock.fast_forward(181_000)
+    expect(dialog).to_be_visible()
+    assert page.locator('#resumeWorkspace').evaluate('(element) => element === document.activeElement')
+    initial = page.locator('#standbyMessage').inner_text()
+    page.clock.fast_forward(8_100)
+    assert page.locator('#standbyMessage').inner_text() != initial
+    page.locator('#resumeWorkspace').click()
+    expect(dialog).to_be_hidden()
+    expect(code).to_contain_text('hello')
+    expect(page.locator('#connectionState')).to_contain_text('Studio connected')
+    page.clock.fast_forward(301_000)
+    expect(dialog).to_be_visible()
+    page.keyboard.press('Escape')
+    expect(dialog).to_be_hidden()
+    expect(code).to_contain_text('hello')
+
+
 def main():
     with sync_playwright() as pw:
         browser = pw.chromium.launch(**launch_options())
         try:
-            for test in (test_compact_chrome, test_theme_preference_migration, test_compact_split_and_layout, test_clamped_sidebar_resize, test_workspace_without_embedded_ai):
+            for test in (test_compact_chrome, test_theme_preference_migration, test_compact_split_and_layout, test_clamped_sidebar_resize, test_workspace_without_embedded_ai, test_standby_preserves_open_workspace):
                 page = browser.new_page(viewport={'width': 1080, 'height': 700})
                 errors = []
                 page.on('pageerror', lambda error: errors.append(str(error)))
