@@ -100,6 +100,19 @@ function registerIpc() {
       clipboard.writeText(value);
       return { ok: true };
     },
+    'bridge:open-studio-plugin': async (event, target) => {
+      if (!mainWindow || event.sender !== mainWindow.webContents ||
+          event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Invalid plugin request.');
+      if (target === 'download') {
+        await shell.openExternal('https://github.com/nikiIDE/RoGoal/releases/latest');
+        return;
+      }
+      if (target !== 'folder') throw new Error('Invalid plugin destination.');
+      const directory = path.join(app.getPath('appData'), '..', 'Local', 'Roblox', 'Plugins');
+      await fs.promises.mkdir(directory, { recursive: true });
+      const error = await shell.openPath(directory);
+      if (error) throw new Error('Could not open the Roblox Plugins folder.');
+    },
     'bridge:export-project': async (event) => {
       if (!mainWindow || event.sender !== mainWindow.webContents ||
           event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Invalid export request.');

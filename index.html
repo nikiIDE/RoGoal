@@ -12,7 +12,7 @@
     <div class="window-titlebar-content"><img class="window-app-icon" src="/RoGoal.png" alt="" width="15" height="15" /><span class="window-app-name">RoGoal</span><span class="window-title-divider">/</span><span id="windowWorkspace">Local workspace</span></div>
   </div>
   <header class="app-header">
-    <div class="brand-lockup"><span class="brand-name">RoGoal</span><span class="brand-divider"></span><span class="brand-workspace" id="headerPlace">Workspace</span></div>
+    <div class="brand-lockup"><span class="brand-name"><span class="project-spark" aria-hidden="true">✦</span> RoGoal</span><span class="brand-divider"></span><span class="brand-workspace" id="headerPlace">Workspace</span></div>
     <div class="header-actions">
       <button class="header-status" id="sessionToggle" aria-haspopup="true" aria-expanded="false" title="Session details"><span class="status-light" id="statusLight"></span><span id="connectionState">Waiting for Studio</span><span data-icon="chevron-down"></span></button>
       <button class="quick-launcher" id="quickApplyLauncher" title="Import a script bundle (Ctrl+L)" aria-label="Quick Apply">Quick Apply <kbd>Ctrl L</kbd></button>
@@ -74,6 +74,7 @@
       <section class="welcome-panel" id="welcome" aria-label="Workspace overview">
         <div class="dashboard-content">
           <div class="workspace-status" id="dashboardStatus">Not connected</div>
+          <div class="home-emblem" aria-hidden="true">✦</div>
           <h1 id="welcomeTitle">Connect to Roblox Studio</h1>
           <p id="welcomeDescription">Enter the pairing code in the RoGoal plugin to start editing.</p>
           <div class="pairing-card" id="pairingCard">
@@ -85,6 +86,11 @@
             <div class="summary-count"><strong id="dashboardScripts">0</strong><span id="dashboardScriptsHint">Scripts</span></div>
             <div class="summary-count"><strong id="dashboardEditors">0</strong><span>Open</span></div>
           </div>
+          <form id="homeComposer" class="scaffold-composer home-composer">
+            <label for="homeRequest">What would you like to build?</label>
+            <textarea id="homeRequest" rows="2" maxlength="8000" required placeholder="Describe a system or a Roblox game to get started…"></textarea>
+            <div class="scaffold-actions"><button type="button" id="homeProjectContext" class="secondary-button">Project context</button><button type="submit" class="project-copy">Copy AI prompt <span aria-hidden="true">↑</span></button></div>
+          </form>
           <div class="dashboard-actions" aria-label="Workspace actions">
             <button class="dashboard-action" id="dashboardBrowse"><span>Open script</span><kbd>Ctrl P</kbd></button>
             <button class="dashboard-action" id="dashboardCompose"><span>Quick Apply</span><kbd>Ctrl L</kbd></button>
@@ -170,6 +176,7 @@
         </div>
       </form>
       <button type="button" id="importScaffoldResponse" class="secondary-button">Import response in Quick Apply</button>
+      <div class="plugin-help" id="pluginHelp" hidden><strong id="pluginHelpTitle"></strong><p>Close Studio, replace RoGoal.rbxmx in the local Plugins folder, then reopen Studio and pair again. Disable any older RoGoal or Cursor Bridge copies.</p><div class="scaffold-actions"><button id="downloadStudioPlugin" type="button" class="secondary-button">Get the Studio plugin</button><button id="openStudioPlugins" type="button" class="secondary-button">Open Plugins folder</button></div></div>
       <p id="projectContextMessage" role="status"></p>
     </div>
   </dialog>

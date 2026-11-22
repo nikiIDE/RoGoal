@@ -15,7 +15,7 @@ local Defaults = {
 	},
 	Product = {
 		Name = "RoGoal",
-		Version = "0.6.0",
+		Version = "0.6.1",
 	},
 	Advanced = {
 		DebugLogging = false,

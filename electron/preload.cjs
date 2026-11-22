@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('cursorBridge', {
   previewQuickApply: (text, overrides) => ipcRenderer.invoke('bridge:preview-quick-apply', text, overrides),
   applyQuickApply: (token) => ipcRenderer.invoke('bridge:apply-quick-apply', token),
   mutateHierarchy: (request) => ipcRenderer.invoke('bridge:mutate-hierarchy', request),
+  openStudioPlugin: (target) => ipcRenderer.invoke('bridge:open-studio-plugin', target),
   exportProject: () => ipcRenderer.invoke('bridge:export-project'),
   getState: () => ipcRenderer.invoke('bridge:get-state'),
   requestSource: (id) => ipcRenderer.invoke('bridge:request-source', id),

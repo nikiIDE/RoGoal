@@ -50,6 +50,10 @@ test('requests a read-only Studio export and ignores a stale reply', async (t) =
   bridge.pair({ code: bridge.pairingCode, studioRunId: 'integration-test', protocolVersion: 2,
     projectExport: true, placeName: 'Arena' });
   await bridge.applyOperation({ type: 'ready' });
+  assert.equal(bridge.getStatus().pluginVersion, null);
+  bridge.updatePluginInfo(bridge.session, { projectExport: true, pluginVersion: '0.6.1' });
+  assert.equal(bridge.getStatus().pluginVersion, '0.6.1');
+  assert.equal(bridge.getStatus().projectExport, true);
   const pending = bridge.exportProject();
   assert.throws(() => bridge.exportProject(), /already in progress/);
   const { command } = bridge.session.projectExportRequest;

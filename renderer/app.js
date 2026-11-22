@@ -3,6 +3,8 @@ import * as monaco from 'monaco-editor';
 import EditorWorker from 'monaco-editor/editor/editor.worker?worker';
 import './styles.css';
 import './workspace.css';
+import './vendor/gsap.min.js';
+import './redesign.css';
 import { mountWorkspace } from './workspace-ui.mjs';
 import { primaryTabIds } from './tab-groups.mjs';
 import { icon } from './icons.js';
@@ -18,6 +20,25 @@ import { calculateExplorerWindow } from './virtual-window.mjs';
 self.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 
 const api = window.cursorBridge;
+const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+function enter(element, distance = 8) {
+  if (!element || motion.matches) return;
+  const gsap = window.gsap;
+  if (!gsap) return;
+  gsap.killTweensOf(element);
+  gsap.fromTo(element, { opacity: 0, y: distance }, {
+    opacity: 1, y: 0, duration: .24, ease: 'power2.out', clearProps: 'opacity,transform',
+  });
+}
+const animatedSurfaces = new MutationObserver(records => {
+  for (const { target, attributeName } of records) {
+    if (attributeName === 'open' ? target.open : !target.hidden) enter(target);
+  }
+});
+for (const surface of document.querySelectorAll('dialog, #welcome, #explorerPane, #codePanel, #secondaryPane, #layoutPanel, #themePanel, #sessionPanel')) {
+  animatedSurfaces.observe(surface, { attributes: true, attributeFilter: ['open', 'hidden'] });
+}
+enter(document.querySelector('.dashboard-content'), 12);
 const $ = (id) => document.getElementById(id);
 const nodes = new Map();
 const expanded = new Set();
@@ -88,6 +109,7 @@ function toast(message, warning = false) {
   const element = $('toast');
   element.textContent = message; element.classList.toggle('warning', warning);
   element.hidden = false;
+  enter(element);
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { element.hidden = true; }, warning ? 6500 : 3100);
   setFooter(message);
@@ -122,7 +144,7 @@ monaco.languages.setMonarchTokensProvider('luau', {
 });
 
 const themePalette = {
-  studio: { background: '252525', fg: 'F2F2F2', keyword: '83C9FC', string: 'AED397', comment: 'A7AAAD' },
+  studio: { background: '171717', fg: 'EFEFEF', keyword: 'E6A890', string: 'AED397', comment: 'A7AAAD' },
   cursor: { background: '202124', fg: 'F2F3F5', keyword: 'B9ACFF', string: '9CDBBE', comment: '969DAE' },
   obsidian: { background: '101013', fg: 'F2F1EF', keyword: 'B6A3D6', string: 'B9CCA6', comment: '858590' },
   graphite: { background: '1B1D21', fg: 'ECEDF0', keyword: 'C1AFDB', string: 'B9CFAD', comment: '777F8C' },
@@ -155,7 +177,7 @@ function savePreference(key, value) {
   try { localStorage.setItem(key, value); } catch { /* Appearance persistence must not block editing. */ }
 }
 const themeLabels = { studio: 'Studio', obsidian: 'Obsidian', cursor: 'Slate', graphite: 'Graphite', midnight: 'Midnight', aurora: 'Aurora' };
-const themeColors = { studio: '#252525', obsidian: '#0b0b0d', cursor: '#202124', graphite: '#161719', midnight: '#0d121a', aurora: '#0c1517' };
+const themeColors = { studio: '#171717', obsidian: '#0b0b0d', cursor: '#202124', graphite: '#161719', midnight: '#0d121a', aurora: '#0c1517' };
 function normalizeThemeName(name, fallback = 'studio') {
   // Preserve the old palette preference under its new product-specific name.
   if (name === 'discord') name = 'cursor';
@@ -1097,6 +1119,7 @@ function updateStatus(status) {
   const previouslyConnected = currentStatus.connected === true;
   const previouslyReady = currentStatus.ready === true;
   currentStatus = status;
+  refreshProjectSupport();
   const connected = status.connected === true;
   const incompatiblePlugin = connected && status.protocolVersion === 1;
   const ready = connected && status.ready === true && !incompatiblePlugin;
@@ -1122,12 +1145,12 @@ function updateStatus(status) {
   $('tabs').hidden = !ready;
   $('codePanel').hidden = !ready || !selectedId;
   $('welcome').hidden = ready && !!selectedId;
-  $('welcomeTitle').textContent = incompatiblePlugin ? 'Update your Studio plugin.' : status.recovering ? 'Reconnecting to Studio.' : ready ? 'Workspace'
+  $('welcomeTitle').textContent = incompatiblePlugin ? 'Update your Studio plugin.' : status.recovering ? 'Reconnecting to Studio.' : ready ? 'What are we building today?'
     : connected ? 'Preparing your workspace.' : 'Connect to Roblox Studio';
   $('welcomeDescription').textContent = incompatiblePlugin
     ? 'Install the latest RoGoal plugin, disable older copies, and pair again.' : status.recovering
     ? 'Connection interrupted. Local drafts are protected; waiting for your Studio session.' : ready
-    ? 'Open a script from Explorer or use a workspace action below.'
+    ? 'Start with an idea, or pick up your scripts in Explorer.'
     : connected ? 'Reading your place hierarchy. This usually takes a moment.'
       : 'Enter the pairing code in the RoGoal plugin to start editing.';
   $('welcomeTip').hidden = !ready;
@@ -2295,16 +2318,45 @@ function handleQuickApplyEvent(event) {
 
 const projectContext = qa('projectContextDialog');
 const projectContextMessage = qa('projectContextMessage');
-qa('railProjectContext').addEventListener('click', () => projectContext.showModal());
+function refreshProjectSupport() {
+  const connected = currentStatus.connected === true;
+  const needsPlugin = connected && currentStatus.projectExport === false;
+  qa('pluginHelp').hidden = !needsPlugin;
+  qa('pluginHelpTitle').textContent = currentStatus.pluginVersion
+    ? `Studio plugin v${currentStatus.pluginVersion} does not support export.`
+    : 'The connected Studio plugin does not support export.';
+  const button = qa('exportProjectMarkdown');
+  button.disabled = button.dataset.busy === 'true' || !currentStatus.ready || needsPlugin;
+  button.title = needsPlugin ? 'Update the Studio plugin to export.' : !connected ? 'Connect Studio to export.' : '';
+}
+const openProjectContext = () => {
+  refreshProjectSupport();
+  if (!projectContext.open) projectContext.showModal();
+};
+qa('railProjectContext').addEventListener('click', openProjectContext);
+qa('homeProjectContext').addEventListener('click', openProjectContext);
+for (const [id, target] of [['downloadStudioPlugin', 'download'], ['openStudioPlugins', 'folder']]) {
+  qa(id).addEventListener('click', () => api.openStudioPlugin(target).catch(error => {
+    projectContextMessage.textContent = readableError(error);
+  }));
+}
+function readableError(error) {
+  return String(error?.message || error).replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/, '');
+}
 qa('importScaffoldResponse').addEventListener('click', () => {
   projectContext.close();
   openQuickApply();
 });
-qa('scaffoldComposer').addEventListener('submit', async (event) => {
+async function copyScaffoldPrompt(event) {
   event.preventDefault();
-  const request = qa('scaffoldRequest').value.trim();
+  const fromHome = event.currentTarget.id === 'homeComposer';
+  const feedback = (message, error = false) => {
+    if (fromHome) toast(message, error);
+    else projectContextMessage.textContent = message;
+  };
+  const request = qa(fromHome ? 'homeRequest' : 'scaffoldRequest').value.trim();
   if (!request) {
-    projectContextMessage.textContent = 'Describe your project first.';
+    feedback('Describe your project first.', true);
     return;
   }
   const instructions = [
@@ -2318,20 +2370,23 @@ qa('scaffoldComposer').addEventListener('submit', async (event) => {
   ].join('\n');
   try {
     await api.copyText(instructions);
-    projectContextMessage.textContent = 'Prompt copied. Paste it into your AI chat, then import the JSON response.';
-  } catch (error) { projectContextMessage.textContent = error.message; }
-});
+    feedback('Prompt copied. Paste it into your AI chat, then import the JSON response.');
+  } catch (error) { feedback(readableError(error), true); }
+}
+qa('scaffoldComposer').addEventListener('submit', copyScaffoldPrompt);
+qa('homeComposer').addEventListener('submit', copyScaffoldPrompt);
 qa('exportProjectMarkdown').addEventListener('click', async (event) => {
   const button = event.currentTarget;
-  button.disabled = true;
+  button.dataset.busy = 'true';
+  refreshProjectSupport();
   projectContextMessage.textContent = 'Choose where to save your project snapshot.';
   try {
     const result = await api.exportProject();
     projectContextMessage.textContent = result
       ? `Saved ${result.count} scripts.${result.unavailable ? ` Studio could not read ${result.unavailable} sources.` : ''}`
       : 'Export canceled.';
-  } catch (error) { projectContextMessage.textContent = error.message; }
-  finally { button.disabled = false; }
+  } catch (error) { projectContextMessage.textContent = readableError(error); }
+  finally { delete button.dataset.busy; refreshProjectSupport(); }
 });
 
 qa('quickApplyLauncher').addEventListener('click', openQuickApply);

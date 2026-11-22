@@ -1,0 +1,58 @@
+/* Workspace surfaces share the graphite and terracotta palette of the design prototype. */
+body[data-theme="studio"] {
+  --bg:#171717; --panel:#202020; --sidebar:#202020; --surface:#2d2d2d;
+  --hover:#343434; --border:#414141; --soft-border:#303030; --text:#efefef;
+  --sub:#c2c2c2; --muted:#a5a5a5; --faint:#919191; --accent:#df8f72;
+  --brand:#df8f72; --brand-hover:#f1a68c; --selection:#39312e;
+  --selection-line:#c68067; --code:#171717;
+}
+body { font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif; }
+.app-header { background:var(--panel); padding-inline:16px; }
+.brand-name { display:inline-flex; align-items:center; gap:6px; font-size:15px; font-weight:650; letter-spacing:-.3px; }
+.project-spark,.home-emblem { color:var(--accent); }
+.header-status,.quick-launcher,.header-button { border-radius:9px; }
+.activity-rail { width:54px; min-width:54px; gap:5px; padding:8px 6px; background:var(--sidebar); border-right:1px solid var(--soft-border); }
+.rail-button { width:38px; height:38px; border-radius:9px; }
+.rail-button[aria-pressed=true]::before { display:none; }
+.rail-button[aria-pressed=true] { box-shadow:inset 0 0 0 1px var(--border); }
+.explorer-pane { background:var(--sidebar); }
+.explorer-heading,.editor-topline,.editor-statusbar,.tabs { background:var(--panel); }
+.explorer-heading .side-mode,.tree-row,.tab,.editor-actions .icon-button { border-radius:8px; }
+.tree-row:hover,.tree-row.selected,.tab.active { background:var(--selection); }
+.search-wrap,.place-search-field,.quick-open-input { border-radius:10px; }
+.editor-area { background:var(--bg); }
+.editor-pane .tabs { gap:4px; padding-inline:5px; }
+.editor-pane .tab { margin:3px 0; }
+.bottom-bar,.bottom-status,.app-footer { background:var(--panel); }
+.welcome-panel { padding:16px 20px; background:var(--bg); }
+.dashboard-content { max-width:650px; text-align:center; }
+.dashboard-content > p { max-width:none; margin-inline:auto; }
+.home-emblem { font-size:30px; line-height:1; margin:.3rem 0 .55rem; }
+.welcome-panel h1 { font-family:inherit; font-size:clamp(21px,4vw,37px); font-weight:620; letter-spacing:-.045em; }
+.workspace-status { border-radius:999px; }
+.pairing-card,.workspace-summary { border-radius:14px; margin-inline:auto; }
+.home-composer { text-align:left; box-sizing:border-box; margin:12px 0; }
+.home-composer textarea { min-height:48px; }
+.scaffold-composer { box-shadow:0 12px 36px rgb(0 0 0 / 12%); }
+.dashboard-actions { display:flex; flex-flow:row wrap; justify-content:center; gap:5px; }
+.dashboard-action { border-radius:999px; min-height:30px; flex:0 1 auto; }
+.dashboard-action kbd { display:none; }
+.modal,.floating-panel,.popover,.context-menu,.quick-open-dialog { border-radius:15px; }
+.modal h2 { font-family:inherit; font-weight:650; }
+.icon-button,.secondary-button,.primary-button,.tool-text { border-radius:9px; }
+.qa-text { background:var(--surface); }
+.qa-footer .primary-button { background:var(--accent); color:var(--bg); border-color:var(--accent); }
+.plugin-help { display:grid; gap:9px; padding:14px; width:100%; border:1px solid var(--border); border-radius:12px; background:var(--panel); }
+.plugin-help[hidden] { display:none; }
+@media (min-width: 1080px) {
+  .activity-rail { width:145px; min-width:145px; align-items:stretch; padding-inline:8px; }
+  .rail-button { width:100%; display:flex; align-items:center; gap:9px; text-align:left; padding:0 8px; }
+  .rail-button .rail-tooltip { position:static; visibility:visible; opacity:1; pointer-events:none; transform:none; padding:0; border:0; box-shadow:none; background:transparent; color:inherit; font-size:11px; white-space:nowrap; }
+}
+@media (max-height: 610px) {
+  .welcome-panel { padding-block:9px; }
+  .home-emblem { font-size:21px; margin-block:4px; }
+  .home-composer { padding:9px 11px; margin-block:7px; gap:5px; }
+  .dashboard-content > p { margin-block:6px 8px; }
+  .pairing-card { margin-bottom:5px; }
+}

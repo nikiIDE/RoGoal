@@ -21,7 +21,7 @@ def fixture_page():
     page = re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]+>', "", page)
     page = page.replace('<script type="module" src="./renderer/app.js"></script>', "")
     css = "\n".join((PROJECT / f"renderer/{name}").read_text(encoding="utf-8")
-                    for name in ("styles.css", "workspace.css"))
+                    for name in ("styles.css", "workspace.css", "redesign.css"))
     return page.replace("</head>", f"<style>{css}</style></head>")
 
 
@@ -87,7 +87,7 @@ MOUNT_APP = """async ([modules, app, imports]) => {
     if (!app.includes(snippet)) throw new Error('Missing renderer import: ' + snippet);
     app = app.replace(snippet, snippet.replace(/'[^']+';$/, "'" + blobs[key] + "';"));
   }
-  app = app.replace("import './styles.css';", '').replace("import './workspace.css';", '');
+  app = app.replace("import './styles.css';", '').replace("import './workspace.css';", '').replace("import './redesign.css';", '').replace("import './vendor/gsap.min.js';", '');
   await import(URL.createObjectURL(new Blob([app], {type:'text/javascript'})));
 }"""
 

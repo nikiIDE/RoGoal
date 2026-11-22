@@ -176,12 +176,24 @@ class BridgeServer extends EventEmitter {
     this.emit('event', { type: 'status', status: this.getStatus() });
   }
 
+  updatePluginInfo(session, data) {
+    const version = cleanString(data.pluginVersion, 24);
+    const validVersion = /^\d+\.\d+\.\d+$/.test(version);
+    const exportAdded = data.projectExport === true && session.protocolVersion === 2 && !session.projectExport;
+    if (!exportAdded && (!validVersion || session.pluginVersion === version)) return;
+    if (exportAdded) session.projectExport = true;
+    if (validVersion) session.pluginVersion = version;
+    this.emitState();
+  }
+
   getStatus() {
     return {
       connected: !!this.session,
       ready: this.ready && !!this.session && !this.session.suspended,
       recovering: !!this.session?.suspended || !!this.resumeTicket,
       protocolVersion: this.session?.protocolVersion || 1,
+      projectExport: this.session?.projectExport === true,
+      pluginVersion: this.session?.pluginVersion || null,
       placeKey: this.session?.placeKey || this.cachedPlaceKey,
       placeName: this.session?.placeName || this.cachedPlaceName,
       studioRunId: this.session?.studioRunId || null,
@@ -274,6 +286,7 @@ class BridgeServer extends EventEmitter {
         throw httpError(409, 'Heartbeat sequence does not match this session.');
       }
       if (authenticatedSession !== this.session) throw httpError(401, 'Session changed during exchange.');
+      this.updatePluginInfo(authenticatedSession, data);
       return this.respond(response, 200, {...this.poll(), receivedSequence, receiptAcks:data.receipts || []});
     }
     if (request.url === '/v1/changes') {
@@ -304,6 +317,7 @@ class BridgeServer extends EventEmitter {
     this.session = {
       protocolVersion: data.protocolVersion === 2 ? 2 : 1,
       projectExport: data.protocolVersion === 2 && data.projectExport === true,
+      pluginVersion: /^\d+\.\d+\.\d+$/.test(cleanString(data.pluginVersion, 24)) ? data.pluginVersion : null,
       suspended: false,
       incoming: new IncomingTransfer(),
       outgoing: new OutgoingTransfers(),

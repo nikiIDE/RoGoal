@@ -1,3 +1,8 @@
+## v0.6.1 - Chat-inspired desktop redesign
+
+- Redesigned navigation, home, workspace tools and dialogs using the supplied prototype.
+- Added bundled GSAP motion and clearer Studio plugin compatibility for Markdown export.
+
 ## v0.6.0 - Project context and JSON scaffolds
 
 - Added compact JSON starter structures to Quick Apply with the existing preview and undo flow.
