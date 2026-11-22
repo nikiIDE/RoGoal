@@ -31,6 +31,7 @@ return {{}}
 
 MOCK_API = r'''(() => {
   window.__quickCalls = [];
+  window.cursorBridge.readImportClipboard = async () => window.__importClipboard;
   window.cursorBridge.previewQuickApply = async (text, overrides) => {
     window.__quickCalls.push({kind:'preview',text,overrides});
     return {ok:true,token:'preview-token',placeName:'Sample Place',summary:{create:1,modify:1,unchanged:0,errors:0},errors:[],entries:[
@@ -65,6 +66,14 @@ def main():
             page.evaluate(MOCK_API)
             page.evaluate(MOUNT_APP,[fixture_modules(),source,IMPORTS])
             page.wait_for_selector('.tree-row[data-id="s1"]')
+            page.evaluate("window.__importClipboard = '{\"v\":1,\"s\":[]}'")
+            page.locator('#dashboardCompose').click()
+            page.locator('#pasteImportClipboard').click()
+            page.wait_for_function("window.__quickCalls.some(item => item.text?.startsWith('{'))")
+            assert page.locator('#quickApplyText').input_value().startswith('{"v":1')
+            page.locator('#quickApplyClear').click()
+            page.keyboard.press('Escape')
+            page.evaluate('window.__quickCalls.length = 0')
             # Shortcut must work without navigating away from Monaco/editor.
             page.locator('.tree-row[data-id="s1"] .tree-name').click()
             page.keyboard.press('Control+l')

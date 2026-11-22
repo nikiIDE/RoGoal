@@ -63,7 +63,7 @@ test('home is text-first, all interface labels are English and themes use produc
   assert.match(html,/<html lang="en">/);
   assert.match(html,/<body data-theme="studio">/);
   assert.doesNotMatch(html,/Discord|sparkles|dashboard-kicker|compose-symbol|dashboard-signoff/);
-  for (const id of ['dashboardBrowse','dashboardCompose','dashboardSearch','dashboardRecovery','dashboardLayout']) {
+  for (const id of ['homeComposer','dashboardCompose','homeProjectContext','pasteImportClipboard','quickApplyConfirm']) {
     assert.match(html,new RegExp('id="'+id+'"'));
   }
   assert.match(html,/<option value="studio">Studio<\/option>/);

@@ -17,22 +17,26 @@ function parseScaffold(text) {
   if (scaffold?.v !== 1 || !Array.isArray(scaffold.s) || scaffold.s.length === 0 ||
       scaffold.s.length > MAX_SCRIPTS) error(`Expected scaffold version 1 with 1 to ${MAX_SCRIPTS} scripts.`);
   const seen = new Set();
-  const classes = { S: 'Script', L: 'LocalScript', M: 'ModuleScript' };
+  const aliases = { S: 'Script', L: 'LocalScript', M: 'ModuleScript' };
   return scaffold.s.map((item, index) => {
     if (!Array.isArray(item) || item.length !== 3) error(`Script ${index + 1}: expected [path, class, source].`);
-    const [rawPath, kind, source] = item;
-    if (typeof kind !== 'string' || !Object.hasOwn(classes, kind) || typeof rawPath !== 'string' || typeof source !== 'string') {
+    const [rawPath, kind, rawSource] = item;
+    const className = typeof kind === 'string' && Object.hasOwn(aliases, kind) ? aliases[kind] : kind;
+    if (!SCRIPT_CLASSES.has(className) || typeof rawPath !== 'string' || typeof rawSource !== 'string') {
       error(`Script ${index + 1}: invalid path, class or source.`);
     }
     const segments = validatePath(rawPath, index);
     const path = `game/${segments.join('/')}`;
     if (seen.has(path)) error(`Duplicate scaffold path: ${path}`);
     seen.add(path);
-    if (!/^--!strict\r?\n[\s\S]*\S/.test(source) || Buffer.byteLength(source) > MAX_SCRIPT_BYTES) {
-      error(`Script ${index + 1}: source must begin with --!strict, include code and fit within 2 MiB.`);
+    const code = rawSource.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+    const strict = /^--!strict(?:\n|$)/.test(code);
+    const source = strict ? code : '--!strict\n' + code;
+    if (!source.slice(9).trim() || Buffer.byteLength(source) > MAX_SCRIPT_BYTES) {
+      error(`Script ${index + 1}: include Luau code of at most 2 MiB.`);
     }
     return { index, name: segments.at(-1), path, segments, status: 'NEW',
-      className: classes[kind], source, scaffold: true };
+      className, source, scaffold: true };
   });
 }
 
@@ -54,8 +58,12 @@ function parseBundle(raw) {
   if (Buffer.byteLength(raw, 'utf8') > MAX_BUNDLE_BYTES) error('Bundle exceeds the 16 MiB safety limit.');
   const text = raw.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const stripped = text.trim();
-  const fenced = /^\x60{3}(?:json)?[ \t]*\n([\s\S]+)\n\x60{3}$/i.exec(stripped);
-  if (stripped.startsWith('{') || fenced) return parseScaffold(fenced ? fenced[1] : stripped);
+  if (stripped.startsWith('{')) return parseScaffold(stripped);
+  const fenced = [...text.matchAll(/^[ \t]*\x60{3}json[ \t]*\n([\s\S]*?)\n[ \t]*\x60{3}[ \t]*$/gim)];
+  if (fenced.length > 1) error('Paste one JSON response at a time.');
+  if (fenced.length === 1) return parseScaffold(fenced[0][1]);
+  const plainFence = /^\x60{3}[ \t]*\n(\s*\{[\s\S]+)\n\x60{3}$/.exec(stripped);
+  if (plainFence) return parseScaffold(plainFence[1]);
   const markers = [...text.matchAll(HEADER)];
   if (!markers.length) {
     error('No valid script headers. Expected 50 equals signs, SCRIPT, PATH, STATUS, and 50 equals signs.');

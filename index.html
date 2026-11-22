@@ -15,7 +15,6 @@
     <div class="brand-lockup"><span class="brand-name"><span class="project-spark" aria-hidden="true">✦</span> RoGoal</span><span class="brand-divider"></span><span class="brand-workspace" id="headerPlace">Workspace</span></div>
     <div class="header-actions">
       <button class="header-status" id="sessionToggle" aria-haspopup="true" aria-expanded="false" title="Session details"><span class="status-light" id="statusLight"></span><span id="connectionState">Waiting for Studio</span><span data-icon="chevron-down"></span></button>
-      <button class="quick-launcher" id="quickApplyLauncher" title="Import a script bundle (Ctrl+L)" aria-label="Quick Apply">Quick Apply <kbd>Ctrl L</kbd></button>
       <button class="header-button" id="layoutToggle" title="Workspace layout" aria-label="Workspace layout" aria-haspopup="dialog" aria-expanded="false">Layout</button>
       <button class="header-button" id="themeToggle" title="Appearance" aria-label="Appearance">Appearance</button>
     </div>
@@ -25,7 +24,7 @@
       <button class="rail-button" id="railHome" aria-label="Workspace home" title="Workspace home" aria-pressed="true"><span data-icon="home"></span><span class="rail-tooltip">Workspace</span></button>
       <button class="rail-button" id="railExplorer" aria-label="Explorer" title="Explorer (Ctrl+Shift+E)" aria-pressed="false"><span data-icon="folder"></span><span class="rail-tooltip">Explorer</span></button>
       <button class="rail-button" id="railSearch" aria-label="Find in Place" title="Find in Place (Ctrl+Shift+F)" aria-pressed="false"><span data-icon="search"></span><span class="rail-tooltip">Search</span></button>
-      <button class="rail-button" id="railProjectContext" aria-label="Project context" title="Project context"><span class="project-spark" aria-hidden="true">✦</span><span class="rail-tooltip">Project context</span></button>
+      <button class="rail-button" id="railProjectContext" aria-label="Project tools" title="Project tools"><span class="project-spark" aria-hidden="true">✦</span><span class="rail-tooltip">Project tools</span></button>
       <button class="rail-button" id="railQuickApply" aria-label="Open Quick Apply" title="Quick Apply (Ctrl+L)"><span data-icon="import"></span><span class="rail-tooltip">Quick Apply</span></button>
       <button class="rail-button" id="railRecovery" aria-label="Open recovery files" title="Recovery files"><span data-icon="history"></span><span class="rail-tooltip">Recovery</span></button>
       <div class="rail-spacer"></div>
@@ -73,33 +72,21 @@
       <div class="tabs" id="tabs" role="tablist" aria-label="Open scripts" hidden><span class="tabs-placeholder">No scripts open</span></div>
       <section class="welcome-panel" id="welcome" aria-label="Workspace overview">
         <div class="dashboard-content">
-          <div class="workspace-status" id="dashboardStatus">Not connected</div>
-          <div class="home-emblem" aria-hidden="true">✦</div>
           <h1 id="welcomeTitle">Connect to Roblox Studio</h1>
           <p id="welcomeDescription">Enter the pairing code in the RoGoal plugin to start editing.</p>
           <div class="pairing-card" id="pairingCard">
             <div class="pairing-copy"><span>Pairing code</span><small>RoGoal plugin in Roblox Studio</small></div>
             <div class="pairing-code"><strong id="pairingCode">------</strong><button class="icon-button quiet" id="copyCode" title="Copy pairing code" aria-label="Copy pairing code"><span data-icon="copy"></span></button></div>
           </div>
-          <div class="workspace-summary" id="workspaceSummary" hidden>
-            <div class="summary-session"><strong id="dashboardSession">Not connected</strong><span id="dashboardSessionHint">Local session</span></div>
-            <div class="summary-count"><strong id="dashboardScripts">0</strong><span id="dashboardScriptsHint">Scripts</span></div>
-            <div class="summary-count"><strong id="dashboardEditors">0</strong><span>Open</span></div>
-          </div>
-          <form id="homeComposer" class="scaffold-composer home-composer">
-            <label for="homeRequest">What would you like to build?</label>
-            <textarea id="homeRequest" rows="2" maxlength="8000" required placeholder="Describe a system or a Roblox game to get started…"></textarea>
-            <div class="scaffold-actions"><button type="button" id="homeProjectContext" class="secondary-button">Project context</button><button type="submit" class="project-copy">Copy AI prompt <span aria-hidden="true">↑</span></button></div>
+          <form id="homeComposer" class="home-composer">
+            <label for="homeRequest" class="visually-hidden">Describe your Roblox project</label>
+            <textarea id="homeRequest" rows="1" maxlength="8000" required placeholder="Describe your Roblox project…"></textarea>
+            <button type="submit" class="project-copy">Copy prompt</button>
           </form>
-          <div class="dashboard-actions" aria-label="Workspace actions">
-            <button class="dashboard-action" id="dashboardBrowse"><span>Open script</span><kbd>Ctrl P</kbd></button>
-            <button class="dashboard-action" id="dashboardCompose"><span>Quick Apply</span><kbd>Ctrl L</kbd></button>
-            <button class="dashboard-action" id="dashboardSearch"><span>Find in Place</span><kbd>Ctrl Shift F</kbd></button>
-            <button class="dashboard-action" id="dashboardRecovery"><span>Recovery files</span></button>
-            <button class="dashboard-action" id="dashboardLayout"><span>Workspace layout</span></button>
+          <div class="home-actions">
+            <button class="dashboard-action" id="dashboardCompose"><span data-icon="import"></span>Paste AI response</button>
+            <button class="dashboard-action" id="homeProjectContext">Project tools</button>
           </div>
-          <p class="welcome-tip" id="welcomeTip">Open a script, then use Ctrl+\ to split the editor.</p>
-        </div>
       </section>
       <section class="code-panel" id="codePanel" hidden>
         <div class="editor-topline"><span class="document-path" id="documentPath">game</span><div class="editor-actions"><span class="sync-indicator" id="syncIndicator">Synced</span><button class="tool-text" id="applyDraft" hidden>Apply draft</button><button class="tool-text" id="reloadStudio" hidden>Use Studio</button><button class="icon-button quiet" id="splitEditor" title="Split editor (Ctrl+\)" aria-label="Split editor" aria-pressed="false"><span data-icon="split"></span></button><button class="icon-button quiet" id="openStudio" title="Open in Roblox Studio" aria-label="Open in Studio"><span data-icon="open"></span></button><button class="icon-button quiet" id="viewBackups" title="Script history" aria-label="Script history"><span data-icon="history"></span></button></div></div>
@@ -165,17 +152,9 @@
       <button type="button" class="icon-button quiet" data-close="projectContextDialog" aria-label="Close project context"><span data-icon="close"></span></button>
     </div>
     <div class="project-context-content">
-      <h2 id="projectContextTitle">What are you building?</h2>
-      <p>Describe a Roblox project, copy the prompt to your AI chat, then import its JSON response into Studio.</p>
-      <form id="scaffoldComposer" class="scaffold-composer">
-        <label for="scaffoldRequest">Describe your starter project</label>
-        <textarea id="scaffoldRequest" rows="3" maxlength="8000" required placeholder="A round-based arena with server matchmaking and a client HUD…"></textarea>
-        <div class="scaffold-actions">
-          <button type="button" id="exportProjectMarkdown" class="secondary-button">Export project .md</button>
-          <button type="submit" class="project-copy">Copy prompt <span aria-hidden="true">↑</span></button>
-        </div>
-      </form>
-      <button type="button" id="importScaffoldResponse" class="secondary-button">Import response in Quick Apply</button>
+      <h2 id="projectContextTitle">Project tools</h2>
+      <button type="button" id="exportProjectMarkdown" class="secondary-button">Export project .md</button>
+      <button type="button" id="importScaffoldResponse" class="secondary-button">Paste AI response</button>
       <div class="plugin-help" id="pluginHelp" hidden><strong id="pluginHelpTitle"></strong><p>Close Studio, replace RoGoal.rbxmx in the local Plugins folder, then reopen Studio and pair again. Disable any older RoGoal or Cursor Bridge copies.</p><div class="scaffold-actions"><button id="downloadStudioPlugin" type="button" class="secondary-button">Get the Studio plugin</button><button id="openStudioPlugins" type="button" class="secondary-button">Open Plugins folder</button></div></div>
       <p id="projectContextMessage" role="status"></p>
     </div>
@@ -183,33 +162,23 @@
 
   <dialog id="quickApplyDialog" class="modal quick-apply-dialog" aria-labelledby="quickApplyTitle">
     <div class="qa-header">
-      <div class="qa-heading"><h2 id="quickApplyTitle">Quick Apply</h2><p>Review and apply a script bundle to Roblox Studio.</p></div>
+      <div class="qa-heading"><h2 id="quickApplyTitle">Import into Studio</h2></div>
       <button type="button" class="icon-button quiet qa-close" data-close="quickApplyDialog" aria-label="Close Quick Apply"><span data-icon="close"></span></button>
     </div>
     <div class="qa-body">
       <div class="qa-input-pane">
-        <div class="qa-pane-top"><label for="quickApplyText">Script bundle <span class="qa-extension">.txt / .json</span></label><button class="qa-inline" id="quickCopyFormat" type="button"><span data-icon="copy"></span> Copy AI format</button></div>
-        <textarea id="quickApplyText" class="qa-text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste a TXT bundle or JSON scaffold here…
-
-==================================================
-SCRIPT: Main
-PATH: game/ServerScriptService/Main
-STATUS: MODIFIED
-==================================================
-
---!strict
-
-print(&quot;Updated&quot;)"></textarea>
+        <div class="qa-pane-top"><label for="quickApplyText">AI response</label><button class="secondary-button" id="pasteImportClipboard" type="button">Paste from clipboard</button></div>
+        <textarea id="quickApplyText" class="qa-text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste the AI response here (Ctrl+V)."></textarea>
         <div class="qa-input-footer"><span id="quickApplySize">0 / 16 MiB</span><div><button class="qa-inline" id="quickApplyClear" type="button">Clear</button><label class="qa-file-button" for="quickApplyFile">Open file</label><input id="quickApplyFile" type="file" accept=".txt,.json,text/plain,application/json" hidden /></div></div>
       </div>
       <div class="qa-preview-pane">
-        <div class="qa-pane-top"><span>Review changes</span><span class="qa-place" id="quickApplyPlace">No Studio session</span></div>
-        <div class="qa-summary" id="quickApplySummary" aria-live="polite"><div class="qa-hint"><span data-icon="check"></span><p>Paste a script bundle to preview every destination before updating your place.</p></div></div>
+        <div class="qa-pane-top"><span>Review</span><span class="qa-place" id="quickApplyPlace">No Studio session</span></div>
+        <div class="qa-summary" id="quickApplySummary" aria-live="polite"><div class="qa-hint"><span data-icon="check"></span><p>Destinations will appear here after you paste a response.</p></div></div>
         <div class="qa-entry-list" id="quickApplyEntries" role="list" aria-label="Script changes"></div>
-        <div class="qa-guardrail"><span data-icon="history"></span><span>Original scripts and the imported TXT are backed up before any change. Studio verifies every destination again.</span></div>
+        <div class="qa-guardrail"><span data-icon="history"></span><span>RoGoal creates a recovery copy before applying changes.</span></div>
       </div>
     </div>
-    <div class="qa-footer"><span id="quickApplyMessage" role="status">Nothing is sent until you apply.</span><div class="qa-footer-actions"><button type="button" class="secondary-button" data-close="quickApplyDialog">Cancel</button><button id="quickApplyConfirm" class="primary-button" type="button" disabled>Apply to Studio <span data-icon="chevron"></span></button></div></div>
+    <div class="qa-footer"><button type="button" class="qa-inline" id="importStudioSetup" hidden>Studio setup</button><button type="button" class="qa-inline" id="retryImport" hidden>Check again</button><span id="quickApplyMessage" role="status"></span><div class="qa-footer-actions"><button type="button" class="secondary-button" data-close="quickApplyDialog">Close</button><button id="quickApplyConfirm" class="primary-button" type="button" disabled>Apply to Studio <span data-icon="chevron"></span></button></div></div>
   </dialog>
   <dialog id="createDialog" class="modal"><form method="dialog" id="createForm"><div class="modal-top"><span class="eyebrow">NEW INSTANCE</span><button type="button" class="icon-button quiet" data-close="createDialog" aria-label="Close"><span data-icon="close"></span></button></div><h2>Create with a name</h2><label class="field-heading" for="createClass">Class</label><select id="createClass" class="field-input"><option value="Script">Script</option><option value="LocalScript">LocalScript</option><option value="ModuleScript">ModuleScript</option><option value="Folder">Folder</option></select><label class="field-heading" for="createName">Name</label><input id="createName" class="field-input" maxlength="100" required autocomplete="off" spellcheck="false" /><div class="destination-caption" id="createPath"></div><div class="modal-actions"><button type="button" class="secondary-button" data-close="createDialog">Cancel</button><button type="submit" class="primary-button" id="confirmCreate">Create</button></div></form></dialog>
   <dialog id="renameDialog" class="modal"><form method="dialog" id="renameForm"><div class="modal-top"><span class="eyebrow">RENAME</span><button type="button" class="icon-button quiet" data-close="renameDialog" aria-label="Close"><span data-icon="close"></span></button></div><h2>Rename instance</h2><label class="field-heading" for="renameName">New name</label><input id="renameName" class="field-input" maxlength="100" required autocomplete="off" spellcheck="false"/><div class="modal-actions"><button type="button" class="secondary-button" data-close="renameDialog">Cancel</button><button type="submit" class="primary-button">Rename</button></div></form></dialog>

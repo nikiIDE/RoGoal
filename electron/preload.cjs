@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('cursorBridge', {
   platform: process.platform,
   setWindowTheme: (name) => ipcRenderer.invoke('bridge:set-window-theme', name),
   copyText: (value) => ipcRenderer.invoke('bridge:copy-text', value),
+  readImportClipboard: () => ipcRenderer.invoke('bridge:read-import-clipboard'),
   saveQuickApplyDraft: (text) => ipcRenderer.invoke('bridge:save-quick-apply-draft', text),
   getQuickApplyDraft: () => ipcRenderer.invoke('bridge:get-quick-apply-draft'),
   previewQuickApply: (text, overrides) => ipcRenderer.invoke('bridge:preview-quick-apply', text, overrides),

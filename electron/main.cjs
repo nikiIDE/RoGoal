@@ -4,6 +4,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { app, BrowserWindow, ipcMain, shell, dialog, clipboard, powerMonitor, screen } = require('electron');
 const { autoUpdater } = require('electron-updater');
+const { maxBundleBytes } = require('../shared/limits.json');
 const { BridgeServer } = require('../bridge/bridge-server.cjs');
 const { windowStyleForTheme } = require('./window-theme.cjs');
 const { initialWindowBounds } = require('./window-bounds.cjs');
@@ -99,6 +100,15 @@ function registerIpc() {
       }
       clipboard.writeText(value);
       return { ok: true };
+    },
+    'bridge:read-import-clipboard': (event) => {
+      if (!mainWindow || event.sender !== mainWindow.webContents ||
+          event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Invalid clipboard request.');
+      const text = clipboard.readText();
+      if (Buffer.byteLength(text, 'utf8') > maxBundleBytes) {
+        throw new Error('Clipboard text exceeds the 16 MiB import limit.');
+      }
+      return text;
     },
     'bridge:open-studio-plugin': async (event, target) => {
       if (!mainWindow || event.sender !== mainWindow.webContents ||

@@ -14,6 +14,9 @@ function cancelResolution(bridge, message) {
 
 function startResolution(bridge, text, overrides) {
   const entries = parseBundle(text);
+  if (entries.some(entry => entry.scaffold) && !bridge.session.projectExport) {
+    throw new Error('The connected Studio plugin cannot import JSON. Install the current RoGoal.rbxmx and pair again.');
+  }
   if (!overrides || Array.isArray(overrides) || typeof overrides !== 'object') throw new Error('Invalid script type overrides.');
   if (bridge.pendingQuickApply || bridge.quickApplyPreparing) throw new Error('Wait for the current Quick Apply to finish.');
   cancelResolution(bridge, 'A newer preview replaced this request.');
@@ -32,16 +35,24 @@ function startResolution(bridge, text, overrides) {
   });
 }
 
+// Empty Luau tables may arrive as empty JSON objects.
+function studioList(value) {
+  if (Array.isArray(value)) return value;
+  return value && typeof value === 'object' && Object.keys(value).length === 0 ? [] : null;
+}
+
 async function acceptResolution(bridge, op) {
   const pending = bridge.pathResolution;
   if (!pending || pending.opId !== op.opId || pending.session !== bridge.session) return;
   if (op.error) { cancelResolution(bridge, String(op.error).slice(0,500)); return; }
   try {
-    if (!Array.isArray(op.nodes) || op.nodes.length > limits.maxScripts * 30 ||
-        !Array.isArray(op.errors) || op.errors.length > limits.maxScripts) throw new Error('Invalid resolved path response.');
+    const nodes = studioList(op.nodes);
+    const errors = studioList(op.errors);
+    if (!nodes || nodes.length > limits.maxScripts * 30 ||
+        !errors || errors.length > limits.maxScripts) throw new Error('Invalid resolved path response.');
     const resolved = new Map();
     let bytes = 0;
-    for (const node of op.nodes) {
+    for (const node of nodes) {
       if (!node || typeof node.id !== 'string' || typeof node.parentId !== 'string' ||
           typeof node.name !== 'string' || typeof node.className !== 'string') throw new Error('Invalid resolved instance.');
       bytes += typeof node.source === 'string' ? Buffer.byteLength(node.source, 'utf8') : 0;
@@ -52,7 +63,7 @@ async function acceptResolution(bridge, op) {
     }
     if (bridge.pathResolution !== pending || pending.session !== bridge.session) return;
     const plan = buildQuickApplyPlan(pending.text, resolved, pending.overrides);
-    for (const problem of op.errors) {
+    for (const problem of errors) {
       if (!Number.isSafeInteger(problem.index) || !plan.entries[problem.index]) throw new Error('Invalid path error index.');
       const entry = plan.entries[problem.index];
       entry.action = 'error';

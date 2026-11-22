@@ -9,117 +9,72 @@ local Defaults = require(Root.Config.Defaults)
 local BridgeWindow = {}
 BridgeWindow.__index = BridgeWindow
 
-local function frame(parent: Instance, name: string, size: UDim2): Frame
-	local object = Instance.new("Frame")
-	object.Name = name
-	object.Size = size
-	object.BackgroundTransparency = 1
-	object.Parent = parent
-	return object
-end
-
-local function text(parent: Instance, name: string, value: string, size: number, color: Color3, order: number, bold: boolean?): TextLabel
-	local label = Primitives.Label(parent, value, size, color, bold)
-	label.Name = name
-	label.LayoutOrder = order
-	label.Size = UDim2.fromScale(1, 0)
-	label.AutomaticSize = Enum.AutomaticSize.Y
-	label.TextWrapped = true
-	return label
-end
-
-local function card(parent: Instance, name: string, order: number): Frame
-	local object = Primitives.Card(parent)
-	object.Name = name
-	object.Size = UDim2.fromScale(1, 0)
-	object.AutomaticSize = Enum.AutomaticSize.Y
-	object.LayoutOrder = order
-	Layout.Padding(object, 12, 12, 12, 12)
-	Layout.List(object, 8)
-	return object
-end
-
-local function page(body: Frame, name: string, widget: DockWidgetPluginGui): (Frame, Frame)
-	local scroll = Layout.NewScroll(body, widget)
-	scroll.Name = name
-	scroll.Size = UDim2.fromScale(1, 1)
-	scroll.Position = UDim2.fromOffset(0, 0)
-	local canvas = scroll.ScrollingFrame :: ScrollingFrame
-	local content = frame(canvas, "Content", UDim2.fromScale(1, 0))
-	content.AutomaticSize = Enum.AutomaticSize.Y
-	Layout.Padding(content, 10, 10, 10, 10)
-	Layout.List(content, 10)
-	return scroll, content
+local function label(parent: Instance, value: string, size: number, order: number, bold: boolean?): TextLabel
+	local item = Primitives.Label(parent, value, size, if bold then Theme.Text else Theme.TextMuted, bold)
+	item.LayoutOrder = order
+	item.Size = UDim2.fromScale(1, 0)
+	item.AutomaticSize = Enum.AutomaticSize.Y
+	item.TextWrapped = true
+	return item
 end
 
 function BridgeWindow.new(widget: DockWidgetPluginGui)
 	local window = Layout.Mount(widget)
 	local tabber = window.Tabber
+	local header = tabber.TabBar.ContentFrame
+	header.Text.Visible = false
+	local version = Primitives.Label(header, "RoGoal  v" .. Defaults.Version, 11, Theme.Text, true)
+	version.Position = UDim2.fromOffset(16, 0)
+	version.Size = UDim2.new(1, -64, 1, 0)
+	version.TextTruncate = Enum.TextTruncate.AtEnd
+
 	local body = tabber.TabBody.Body :: Frame
 	body.Text:Destroy()
+	local scroll = Instance.new("ScrollingFrame")
+	scroll.Name = "Connection"
+	scroll.Size = UDim2.fromScale(1, 1)
+	scroll.BackgroundColor3 = Theme.Background
+	scroll.BorderSizePixel = 0
+	scroll.CanvasSize = UDim2.fromOffset(0, 0)
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.ScrollingDirection = Enum.ScrollingDirection.Y
+	scroll.ScrollBarThickness = 4
+	scroll.ScrollBarImageColor3 = Theme.BorderStrong
+	scroll.VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar
+	scroll.Parent = body
 
-	local pairingPage, pairing = page(body, "Pairing", widget)
-	local sessionPage, session = page(body, "Session", widget)
+	local content = Instance.new("Frame")
+	content.Size = UDim2.fromScale(1, 0)
+	content.AutomaticSize = Enum.AutomaticSize.Y
+	content.BackgroundTransparency = 1
+	content.Parent = scroll
+	Layout.Padding(content, 16, 16, 18, 18)
+	Layout.List(content, 10)
 
-	local pairCard = card(pairing, "PairDesktop", 1)
-	local pairTitle = text(pairCard, "Title", "Connect to the desktop app", 17, Theme.Text, 1, true)
-	local instructions = text(pairCard, "Instructions", "Open RoGoal on Windows and enter the six-digit pairing code shown there.", 14, Theme.TextMuted, 2)
-
-	local controls = frame(pairCard, "PairingControls", UDim2.new(1, 0, 0, 32))
-	controls.LayoutOrder = 3
-	Layout.List(controls, 8, true)
-	local code = Primitives.Input(controls, "Pairing code", 124)
-	code.Name = "Code"
-	code.LayoutOrder = 1
-	code.Size = UDim2.fromOffset(124, 32)
-	code.ClearTextOnFocus = false
-	Layout.Fill(code)
+	local title = label(content, "Connect to RoGoal", 17, 1, true)
+	local instructions = label(content, "Enter the six-digit code shown in the Windows app.", 12, 2)
+	local code = Primitives.Input(content, "Six-digit code", 124)
+	code.Size = UDim2.new(1, 0, 0, 36)
+	code.LayoutOrder = 3
 	code.MultiLine = false
 
-	local connect = Primitives.Button(controls, "Connect", 104, "Primary")
-	connect.Name = "Connect"
-	connect.LayoutOrder = 2
-	connect.Size = UDim2.fromOffset(104, 32)
+	local connect = Primitives.Button(content, "Connect", 104, "Primary")
+	connect.Size = UDim2.new(1, 0, 0, 36)
+	connect.LayoutOrder = 4
 
-	local disconnect = Primitives.Button(controls, "Disconnect", 104, "Secondary")
-	disconnect.Name = "Disconnect"
-	disconnect.LayoutOrder = 2
-	disconnect.Size = UDim2.fromOffset(104, 32)
+	local disconnect = Primitives.Button(content, "Disconnect", 104, "Secondary")
+	disconnect.Size = UDim2.new(1, 0, 0, 36)
+	disconnect.LayoutOrder = 4
 	disconnect.Visible = false
 
-	local statusCard = card(pairing, "PairingStatus", 2)
-	local badge = Primitives.Badge(statusCard, "Disconnected")
-	badge.LayoutOrder = 1
-	local pairStatus = text(statusCard, "Status", "", 14, Theme.TextMuted, 2)
-
-	local sessionCard = card(session, "DesktopSession", 1)
-	text(sessionCard, "Title", "Desktop session", 17, Theme.Text, 1, true)
-	local sessionStatus = text(sessionCard, "Status", "", 14, Theme.TextMuted, 2)
-	text(sessionCard, "Endpoint", Defaults.ServerURL, 13, Theme.TextMuted, 3)
-
-	local capabilities = card(session, "Synchronization", 2)
-	text(capabilities, "Title", "Live synchronization", 17, Theme.Text, 1, true)
-	text(capabilities, "Description", "Once paired, open scripts in the desktop Explorer. Edits sync between RoGoal and Studio, and recovery copies are stored on this computer.", 14, Theme.TextMuted, 2)
-
-	local tabs: {[string]: Frame}
-	local function selectPage(mode: string)
-		pairingPage.Visible = mode == "Pairing"
-		sessionPage.Visible = mode == "Session"
-		Layout.SelectTab(tabs, mode)
-	end
-	tabs = Layout.BuildTabs(tabber.TabBar, {
-		{mode = "Pairing", title = "Pair"},
-		{mode = "Session", title = "Session"},
-	}, selectPage)
-	selectPage("Pairing")
+	local status = label(content, "", 11, 5)
+	status.Visible = false
 
 	return setmetatable({
 		_window = window,
-		_pairTitle = pairTitle,
+		_title = title,
 		_instructions = instructions,
-		_badge = badge,
-		_pairStatus = pairStatus,
-		_sessionStatus = sessionStatus,
+		_status = status,
 		_busy = false,
 		_connected = false,
 		CodeBox = code,
@@ -144,11 +99,9 @@ function BridgeWindow:SetConnected(connected: boolean)
 	if connected and self.CodeBox.Text ~= "" then
 		self.CodeBox.Text = ""
 	end
-	self._pairTitle.Text = if connected then "Desktop paired" else "Connect to the desktop app"
-	self._instructions.Text = if connected then "Use the desktop Explorer to open scripts in this place." else "Open RoGoal on Windows and enter the six-digit pairing code shown there."
-	self._badge.Text = if connected then "Connected" else "Disconnected"
-	self._badge.TextColor3 = if connected then Theme.Success else Theme.TextMuted
-	self._badge.BackgroundColor3 = if connected then Theme.Success:Lerp(Theme.Surface, 0.82) else Theme.SurfaceActive
+	self._title.Text = if connected then "Studio connected" else "Connect to RoGoal"
+	self._instructions.Text = if connected then "Use Paste AI response in the Windows app to import folders and scripts."
+		else "Enter the six-digit code shown in the Windows app."
 end
 
 function BridgeWindow:SetStatus(message: string, isError: boolean?)
@@ -160,10 +113,9 @@ function BridgeWindow:SetStatus(message: string, isError: boolean?)
 		or string.find(lowered, "could not", 1, true)
 		or string.find(lowered, "limit", 1, true)
 
-	for _, label in {self._pairStatus, self._sessionStatus} do
-		label.Text = message
-		label.TextColor3 = if warning then Theme.Warning else Theme.TextMuted
-	end
+	self._status.Visible = message ~= "" and message ~= "Disconnected"
+	self._status.Text = message
+	self._status.TextColor3 = if warning then Theme.Warning else Theme.TextMuted
 end
 
 function BridgeWindow:GetWindow(): Frame

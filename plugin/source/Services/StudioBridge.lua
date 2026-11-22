@@ -640,6 +640,7 @@ function StudioBridge:_applyCommand(command: any)
 			function(target: Instance): string return self:_idFor(target) end, canContinue)
 		if canContinue() then
 			table.insert(self._results, reply)
+			self:_notify(if reply.status == "applied" then "Import applied." else "Import failed. See the Windows app for details.")
 			for _, entry in command.entries do
 				if entry.action == "modify" and entry.scriptId then
 					local target = self._instances[entry.scriptId]

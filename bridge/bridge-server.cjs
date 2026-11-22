@@ -1042,12 +1042,10 @@ class BridgeServer extends EventEmitter {
 
   previewQuickApply(text, classOverrides = {}) {
     if (!this.session || !this.ready || this.session.suspended) throw new Error('Connect Roblox Studio before previewing the bundle.');
-    if (typeof text === 'string' && /^\s*(?:\{|\x60{3})/.test(text) && !this.session.projectExport) {
-      throw new Error('Install the RoGoal 0.6.0 Studio plugin and pair again to import a JSON scaffold.');
-    }
     if (this.session.protocolVersion === 2) return resolver.startResolution(this, text, classOverrides);
     if (this.indexing) throw new Error('Quick Apply requires a complete hierarchy or fully loaded paths. Wait for automatic indexing to pause.');
     const plan = buildQuickApplyPlan(text, this.nodes, classOverrides);
+    if (plan.entries.some(entry => entry.scaffold)) throw new Error('Update the Studio plugin before importing JSON.');
     this.requireQuickApplyPathsLoaded(plan);
     const token = crypto.randomUUID();
     // Keep only a few short-lived previews so large pasted files never accumulate.

@@ -57,7 +57,7 @@ export function mountWorkspace(adapter) {
   }
 
   function showEditor() { home = false; focusedGroup = 'primary'; refresh(); }
-  function revealExplorer() { setLayout({ sidebarVisible: true }); }
+  function revealExplorer() { home = false; setLayout({ sidebarVisible: true }); }
   function showHome() { home = true; refresh(); }
   function primaryDocument() { return snapshot().currentId; }
   function activeDocument() { return focusedGroup === 'secondary' && secondaryId ? secondaryId : primaryDocument(); }
@@ -151,11 +151,11 @@ export function mountWorkspace(adapter) {
     if (secondaryId && (!doc?.model || doc.model.isDisposed())) closeSplit({ focus: false });
     document.body.dataset.sessionReady = String(ready);
     $('tabs').hidden = !ready || state.openIds.length === 0;
-    $('workspaceSummary').hidden = !ready;
     const showCode = ready && !!current && !home;
     $('welcome').hidden = showCode;
     $('codePanel').hidden = !showCode;
     $('editorArea').dataset.home = String(home);
+    document.body.dataset.workspaceHome = String(home);
     const showSecond = ready && !!secondaryId && !home;
     $('secondaryPane').hidden = !showSecond;
     $('splitDivider').hidden = !showSecond;
@@ -165,20 +165,13 @@ export function mountWorkspace(adapter) {
     const onHome = home || !current;
     pressed('railHome', onHome);
     pressed('railExplorer', !onHome && layout.sidebarVisible && state.sidebarMode === 'explorer');
-    pressed('railSearch', layout.sidebarVisible && state.sidebarMode === 'search');
+    pressed('railSearch', !home && layout.sidebarVisible && state.sidebarMode === 'search');
     pressed('splitEditor', showSecond);
     $('splitEditor').disabled = !ready || !current;
     $('layoutVertical').disabled = !ready || (!current && !secondaryId);
     $('layoutHorizontal').disabled = !ready || (!current && !secondaryId);
-    for (const id of ['railExplorer', 'railSearch', 'dashboardBrowse', 'dashboardSearch']) $(id).disabled = !ready;
+    for (const id of ['railExplorer', 'railSearch']) $(id).disabled = !ready;
     text('windowWorkspace', ready ? state.status.placeName || 'Workspace' : 'Local workspace');
-    text('dashboardSession', ready ? state.status.placeName || 'Connected' : 'Not connected');
-    text('dashboardSessionHint', ready ? 'Local session' : 'Not connected');
-    text('dashboardScripts', ready ? state.scriptCount.toLocaleString('en-US') : '--');
-    text('dashboardScriptsHint', ready && (state.status.indexing || state.status.onDemand) ? 'Indexed scripts' : 'Scripts');
-    text('dashboardEditors', ready ? new Set([...state.openIds, ...(secondaryId ? [secondaryId] : [])]).size : '0');
-    text('dashboardStatus', ready ? 'Studio connected' : 'Not connected');
-    $('dashboardStatus').classList.toggle('online', ready);
     if (showSecond && doc) {
       text('secondaryTabName', doc.name);
       text('secondaryPath', doc.path);
@@ -206,15 +199,13 @@ export function mountWorkspace(adapter) {
     if (open) $('dockLeft').focus();
   }
 
-  for (const id of ['layoutToggle', 'dashboardLayout']) listen($(id), 'click', toggleLayout);
+  listen($('layoutToggle'), 'click', toggleLayout);
   listen($('closeLayout'), 'click', adapter.hidePopovers);
   listen($('railHome'), 'click', showHome);
   listen($('railExplorer'), 'click', () => { revealExplorer(); adapter.setSidebarView('explorer', true); refresh(); });
   listen($('railSearch'), 'click', () => { revealExplorer(); adapter.openPlaceSearch(); refresh(); });
   for (const id of ['railQuickApply', 'dashboardCompose']) listen($(id), 'click', adapter.openQuickApply);
-  listen($('dashboardBrowse'), 'click', adapter.openQuickOpen);
-  listen($('dashboardSearch'), 'click', () => { revealExplorer(); adapter.openPlaceSearch(); });
-  for (const id of ['dashboardRecovery', 'railRecovery']) listen($(id), 'click', () => $('openBackups').click());
+  listen($('railRecovery'), 'click', () => $('openBackups').click());
   listen($('railHelp'), 'click', () => $('explorerHelp').click());
   listen($('dockLeft'), 'click', () => setLayout({ sidebarSide: 'left', sidebarVisible: true }));
   listen($('dockRight'), 'click', () => setLayout({ sidebarSide: 'right', sidebarVisible: true }));

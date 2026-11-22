@@ -1,3 +1,8 @@
+## v0.6.2 - Direct Studio import and simpler workspace
+
+- Moved Paste AI response to the home screen and simplified the Studio widget.
+- Improved JSON import and handling of Studio path replies.
+
 ## v0.6.1 - Chat-inspired desktop redesign
 
 - Redesigned navigation, home, workspace tools and dialogs using the supplied prototype.

@@ -22,10 +22,7 @@ def test_compact_chrome(page):
         page.set_viewport_size({'width': width, 'height': height})
         mount_built(page, offline=True)
         expect(page.locator('body')).to_have_attribute('data-theme', 'studio')
-        expect(page.locator('#workspaceSummary')).to_be_hidden()
         expect(page.locator('#welcomeTitle')).to_have_text('Connect to Roblox Studio')
-        expect(page.locator('#dashboardBrowse')).to_be_disabled()
-        expect(page.locator('#dashboardSearch')).to_be_disabled()
         for selector in ('#pairingCard', '#copyCode', '#layoutToggle', '#themeToggle', '#sessionToggle'):
             inside_viewport(page, selector)
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
@@ -62,7 +59,6 @@ def test_theme_preference_migration(page):
 def test_compact_split_and_layout(page):
     page.set_viewport_size({'width': 840, 'height': 540})
     mount_built(page)
-    expect(page.locator('#workspaceSummary')).to_be_visible()
     expect(page.locator('#homeComposer')).to_be_visible()
     page.evaluate("window.__emitServer({type:'status',status:{connected:true,ready:true,protocolVersion:2,projectExport:false,pluginVersion:'0.5.0',placeKey:'100-200',placeName:'Sample Place'}})")
     page.locator('#homeProjectContext').click()
@@ -72,9 +68,7 @@ def test_compact_split_and_layout(page):
     expect(page.locator('#pluginHelp')).to_be_hidden()
     expect(page.locator('#exportProjectMarkdown')).to_be_enabled()
     page.keyboard.press('Escape')
-    expect(page.locator('#dashboardScripts')).to_have_text('3')
     expect(page.locator('#tabs')).to_be_hidden()
-    assert page.locator('#welcome .dashboard-action svg').count() == 0
     assert page.locator('.activity-rail button').count() == 7
     for node in page.locator('.tree-class svg').all():
         expect(node).to_have_attribute('stroke', 'currentColor')
@@ -131,7 +125,7 @@ def test_workspace_without_embedded_ai(page):
         assert page.locator('#aiPanel').count() == 0
         assert page.locator('.activity-rail button').count() == 7
         assert page.locator('#shortcutsDialog').count() <= 1
-        expect(page.locator('#quickApplyLauncher')).to_be_visible()
+        expect(page.locator('#dashboardCompose')).to_be_visible()
         page.locator('#railProjectContext').click()
         inside_viewport(page, '#projectContextDialog')
         expect(page.locator('#exportProjectMarkdown')).to_be_disabled()

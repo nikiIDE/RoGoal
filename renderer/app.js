@@ -22,7 +22,7 @@ self.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 const api = window.cursorBridge;
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 function enter(element, distance = 8) {
-  if (!element || motion.matches) return;
+  if (!element || motion.matches || document.body.dataset.reduceMotion === 'true') return;
   const gsap = window.gsap;
   if (!gsap) return;
   gsap.killTweensOf(element);
@@ -1153,7 +1153,7 @@ function updateStatus(status) {
     ? 'Start with an idea, or pick up your scripts in Explorer.'
     : connected ? 'Reading your place hierarchy. This usually takes a moment.'
       : 'Enter the pairing code in the RoGoal plugin to start editing.';
-  $('welcomeTip').hidden = !ready;
+  $('welcomeDescription').hidden = ready;
 
   if (previouslyConnected && !connected) {
     clipboardState = null;
@@ -1315,7 +1315,7 @@ $('sessionToggle').addEventListener('click', (event) => { event.stopPropagation(
 $('themeToggle').addEventListener('click', (event) => { event.stopPropagation(); togglePopover('themePanel'); });
 $('closeSession').addEventListener('click', hidePopovers);
 document.addEventListener('pointerdown', (event) => {
-  if (!event.target.closest('.floating-panel, #sessionToggle, #themeToggle, #explorerMore, #newNode, #layoutToggle, #railLayout, #dashboardLayout')) hidePopovers();
+  if (!event.target.closest('.floating-panel, #sessionToggle, #themeToggle, #explorerMore, #newNode, #layoutToggle, #railLayout')) hidePopovers();
 });
 function menuItem(name, glyph, handler, { disabled = false, shortcut = '', danger = false } = {}) {
   const button = document.createElement('button');
@@ -2083,32 +2083,6 @@ $('viewBackups').addEventListener('click',async()=>{
 
 // Quick Apply uses the exact plain-text delivery contract; it never executes AI text.
 const quickApplyDraftKey = 'cursor-bridge-quick-apply-draft';
-const quickApplyFormat = [
-  'Return all newly created or modified Roblox Luau scripts in ONE plain .txt document.',
-  'Include ONLY scripts that must actually change. Supply their COMPLETE final source, not patches.',
-  'Use exact, case-sensitive paths from the Roblox Studio Explorer.',
-  'Each Luau source must begin on its first code line with --!strict.',
-  'All script code and comments must be in English.',
-  'Use STATUS: MODIFIED only for an existing script and STATUS: NEW for a new one.',
-  'For every NEW script also include CLASS: Script, CLASS: LocalScript, or CLASS: ModuleScript.',
-  'If CLASS is omitted for NEW, RoGoal defaults to Script; users can change it in the preview.',
-  'Paths must use forward slashes, beginning at game/Workspace, game/ServerScriptService, etc.',
-  'Missing intermediate folders in NEW script paths will be created automatically.',
-  'Do not use markdown fences, explanations, or text outside the script blocks.',
-  'Repeat the following header for EVERY script, using exactly 50 equals signs:',
-  '',
-  '==================================================',
-  'SCRIPT: ExampleScript',
-  'PATH: game/ServerScriptService/Systems/ExampleScript',
-  'STATUS: NEW',
-  'CLASS: Script',
-  '==================================================',
-  '',
-  '--!strict',
-  '',
-  'print("Hello from RoGoal")',
-].join('\n');
-
 let quickApplyPreview = null;
 let quickApplyTimer = null;
 let quickApplyRequestEpoch = 0;
@@ -2126,6 +2100,7 @@ function quickApplyNotice(message, error = false) {
 function quickApplyRefreshButton() {
   qa('quickApplyText').readOnly = quickApplyApplying;
   qa('quickApplyFile').disabled = quickApplyApplying;
+  qa('pasteImportClipboard').disabled = quickApplyApplying;
   for (const select of qa('quickApplyEntries').querySelectorAll('select')) select.disabled = quickApplyApplying;
   const summary = quickApplyPreview?.summary;
   qa('quickApplyConfirm').disabled = !canMutate() || quickApplyApplying || !quickApplyPreview?.token ||
@@ -2204,7 +2179,7 @@ function quickApplyRenderPreview(reply) {
   }
   qa('quickApplyEntries').replaceChildren(fragment);
   if (summary.errors) quickApplyNotice(`Resolve ${summary.errors} destination error(s) before applying.`, true);
-  else if (summary.create + summary.modify) quickApplyNotice('Review the exact paths. Nothing has been changed yet.');
+  else if (summary.create + summary.modify) quickApplyNotice('Review the destinations, then apply to Studio.');
   else quickApplyNotice('All script contents already match your Place.');
   quickApplyRefreshButton();
 }
@@ -2217,9 +2192,9 @@ async function quickApplyPreviewText() {
   qa('quickApplySize').textContent = `${(bytes / 1048576).toFixed(2)} / 16 MiB`;
   if (!value.trim()) {
     api.saveQuickApplyDraft('').catch(safeError);
-    quickApplyHelp('Paste an AI-generated bundle. Every script will appear here with its resolved Studio destination.');
+    quickApplyHelp('Destinations will appear here after you paste a response.');
     qa('quickApplyEntries').replaceChildren();
-    quickApplyNotice('Nothing is sent until you apply.');
+    quickApplyNotice('');
     return;
   }
   if (bytes > limits.maxBundleBytes) {
@@ -2236,9 +2211,9 @@ async function quickApplyPreviewText() {
   }
   if (epoch !== quickApplyRequestEpoch) return;
   if (currentStatus.connected && currentStatus.protocolVersion === 1) {
-    quickApplyHelp('Update the Studio plugin to v0.3.0. Exact-path Quick Apply requires both updated components.');
+    quickApplyHelp('Install the current RoGoal.rbxmx and pair again.');
     qa('quickApplyEntries').replaceChildren();
-    quickApplyNotice('Studio plugin update required. Your TXT is saved locally.', true);
+    quickApplyNotice('Plugin update required. Your response is saved locally.', true);
     return;
   }
   if (!canMutate()) {
@@ -2259,9 +2234,11 @@ async function quickApplyPreviewText() {
     quickApplyHelp(message);
     qa('quickApplyEntries').replaceChildren();
     quickApplyNotice(message, true);
+    qa('retryImport').hidden = false;
   }
 }
 function quickApplySchedulePreview(wait = 280) {
+  qa('retryImport').hidden = true;
   quickApplyRequestEpoch++;
   clearTimeout(quickApplyTimer);
   quickApplyPreview = null;
@@ -2270,14 +2247,16 @@ function quickApplySchedulePreview(wait = 280) {
 }
 function openQuickApply() {
   if (!qa('quickApplyDialog').open) qa('quickApplyDialog').showModal();
+  qa('importStudioSetup').hidden = !currentStatus.connected || currentStatus.projectExport !== false;
   qa('quickApplyPlace').textContent = canMutate() ? currentStatus.placeName : 'Studio offline';
   qa('quickApplyText').focus();
   if (!quickApplyApplying) quickApplySchedulePreview(0);
 }
 function quickApplySessionChanged() {
-  const context = `${currentStatus.studioRunId}|${currentStatus.placeKey}|${canMutate()}`;
+  const context = `${currentStatus.studioRunId}|${currentStatus.placeKey}|${canMutate()}|${currentStatus.projectExport}`;
   if (context === quickApplyContext) return;
   quickApplyContext = context;
+  qa('importStudioSetup').hidden = !currentStatus.connected || currentStatus.projectExport !== false;
   qa('quickApplyPlace').textContent = canMutate() ? currentStatus.placeName : 'Studio offline';
   quickApplyPreview = null;
   quickApplyRefreshButton();
@@ -2311,6 +2290,7 @@ function handleQuickApplyEvent(event) {
       'Studio could not confirm the operation.';
     quickApplyClearPreview();
     quickApplyHelp(`Studio status: ${event.status}. ${reason}`);
+    qa('retryImport').hidden = false;
     quickApplyNotice(`Not completed: ${event.status}. Original bundle is saved in recovery.`, true);
     toast(`Quick Apply: ${event.status}. ${reason}`, true);
   }
@@ -2349,14 +2329,9 @@ qa('importScaffoldResponse').addEventListener('click', () => {
 });
 async function copyScaffoldPrompt(event) {
   event.preventDefault();
-  const fromHome = event.currentTarget.id === 'homeComposer';
-  const feedback = (message, error = false) => {
-    if (fromHome) toast(message, error);
-    else projectContextMessage.textContent = message;
-  };
-  const request = qa(fromHome ? 'homeRequest' : 'scaffoldRequest').value.trim();
+  const request = qa('homeRequest').value.trim();
   if (!request) {
-    feedback('Describe your project first.', true);
+    toast('Describe your project first.', true);
     return;
   }
   const instructions = [
@@ -2370,10 +2345,9 @@ async function copyScaffoldPrompt(event) {
   ].join('\n');
   try {
     await api.copyText(instructions);
-    feedback('Prompt copied. Paste it into your AI chat, then import the JSON response.');
-  } catch (error) { feedback(readableError(error), true); }
+    toast('Prompt copied. Paste it into your AI chat, then choose Paste AI response here.');
+  } catch (error) { toast(readableError(error), true); }
 }
-qa('scaffoldComposer').addEventListener('submit', copyScaffoldPrompt);
 qa('homeComposer').addEventListener('submit', copyScaffoldPrompt);
 qa('exportProjectMarkdown').addEventListener('click', async (event) => {
   const button = event.currentTarget;
@@ -2389,10 +2363,22 @@ qa('exportProjectMarkdown').addEventListener('click', async (event) => {
   finally { delete button.dataset.busy; refreshProjectSupport(); }
 });
 
-qa('quickApplyLauncher').addEventListener('click', openQuickApply);
-qa('quickCopyFormat').addEventListener('click', async () => {
-  try { await api.copyText(quickApplyFormat); toast('AI delivery instructions copied.'); }
-  catch (error) { safeError(error); }
+qa('retryImport').addEventListener('click', () => quickApplySchedulePreview(0));
+qa('importStudioSetup').addEventListener('click', () => {
+  qa('quickApplyDialog').close();
+  openProjectContext();
+});
+qa('pasteImportClipboard').addEventListener('click', async () => {
+  const input = qa('quickApplyText');
+  const previous = input.value;
+  try {
+    const value = await api.readImportClipboard();
+    if (!qa('quickApplyDialog').open || quickApplyApplying || input.value !== previous) return;
+    if (!value.trim()) { quickApplyNotice('Copy the AI response first, then try again.', true); return; }
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+  } catch (error) { quickApplyNotice(readableError(error), true); }
 });
 qa('quickApplyClear').addEventListener('click', () => {
   if (quickApplyApplying) return;
@@ -2424,7 +2410,7 @@ qa('quickApplyConfirm').addEventListener('click', async () => {
     quickApplyNotice('Finish syncing or resolving local editor changes before Quick Apply.', true);
     return;
   }
-  if (!window.confirm(`Apply ${preview.summary.create} new and ${preview.summary.modify} modified script(s) to ${currentStatus.placeName}?\n\nAll modified script sources will be backed up first.`)) return;
+  if (preview.summary.modify > 0 && !window.confirm(`Apply ${preview.summary.create} new and ${preview.summary.modify} modified script(s) to ${currentStatus.placeName}?\n\nAll modified script sources will be backed up first.`)) return;
   quickApplyApplying = true;
   quickApplyRefreshButton();
   quickApplySubmittedText = qa('quickApplyText').value;
@@ -2438,7 +2424,8 @@ qa('quickApplyConfirm').addEventListener('click', async () => {
   } catch (error) {
     quickApplyApplying = false;
     quickApplyClearPreview();
-    quickApplyNotice(error?.message || 'Quick Apply failed before any Studio changes.', true);
+    qa('retryImport').hidden = false;
+    quickApplyNotice(readableError(error), true);
     quickApplyRefreshButton();
   }
 });

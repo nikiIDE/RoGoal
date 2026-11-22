@@ -32,7 +32,7 @@ test('no chat pane or stale ChatGPT shortcut remains in the renderer', () => {
   assert.doesNotMatch(renderer, /mountAssistant|ai-panel|assistant\?\.|aiProjects/);
   assert.doesNotMatch(html, /AI project conversations|Ctrl Shift A|aiPanel|railAssistant/);
   assert.match(html, /id="railQuickApply"/);
-  assert.match(html, /id="quickApplyLauncher"/);
+  assert.match(html, /id="dashboardCompose"/);
   assert.match(html, /id="quickApplyDialog"/);
   assert.match(renderer, /openQuickApply/);
 });
@@ -46,7 +46,7 @@ test('Quick Apply IPC and safety pathway remain present', () => {
   }
   assert.match(renderer, /quickApplySessionChanged\(\)/);
   assert.match(renderer, /qa\('quickApplyDialog'\)/);
-  assert.match(html, /Original scripts and the imported TXT are backed up before any change/);
+  assert.match(html, /RoGoal creates a recovery copy before applying changes/);
 });
 
 test('future releases must not reintroduce assistant content into the packaged bundle', () => {

@@ -68,3 +68,46 @@ test('requests a read-only Studio export and ignores a stale reply', async (t) =
   await bridge.disconnect();
   await rejection;
 });
+
+test('AI response with surrounding prose reaches Studio and waits for its acknowledgement', async (t) => {
+  const storageDir = await fs.mkdtemp(path.join(os.tmpdir(), 'rogoal-import-'));
+  t.after(() => fs.rm(storageDir, { recursive: true, force: true }));
+  const bridge = new BridgeServer({ storageDir });
+  bridge.pair({
+    code: bridge.pairingCode, studioRunId: 'integration-import', protocolVersion: 2,
+    projectExport: true, placeName: 'Arena',
+  });
+  await bridge.applyOperation({ type: 'ready' });
+  const fence = '\x60'.repeat(3);
+  const payload = { v: 1, s: [
+    ['ServerScriptService/Arena/Main', 'Script', 'print("ready")'],
+    ['ServerScriptService/Arena/Rules', 'M', 'return {}'],
+    ['StarterPlayer/StarterPlayerScripts/Arena/Hud', 'LocalScript', 'print("UI")'],
+  ] };
+  const response = ['Here is the starter project.', fence + 'json',
+    JSON.stringify(payload), fence, 'Paste into RoGoal.'].join('\n');
+  assert.throws(() => parseBundle(response + '\n' + response), /one JSON response/);
+  const previewPromise = bridge.previewQuickApply(response);
+  const request = bridge.pathResolution.command;
+  await bridge.applyOperation({ type: 'resolvedPaths', opId: request.opId, errors: {}, nodes: [
+    { id: 'server', parentId: 'game', name: 'ServerScriptService', className: 'ServerScriptService' },
+    { id: 'starter', parentId: 'game', name: 'StarterPlayer', className: 'StarterPlayer' },
+    { id: 'client', parentId: 'starter', name: 'StarterPlayerScripts', className: 'StarterPlayerScripts' },
+  ] });
+  const preview = await previewPromise;
+  assert.equal(preview.ok, true);
+  assert.equal(preview.summary.create, 3);
+  const queued = await bridge.applyQuickApply(preview.token);
+  const command = bridge.poll().commands.find(item => item.type === 'quickApply');
+  assert.equal(command.opId, queued.opId);
+  assert.deepEqual(command.entries.map(entry => [entry.className, entry.missingFolders, entry.scaffold]), [
+    ['Script', ['Arena'], true], ['ModuleScript', ['Arena'], true], ['LocalScript', ['Arena'], true],
+  ]);
+  assert.equal(command.entries[0].source, '--!strict\nprint("ready")');
+  const events = [];
+  bridge.on('event', event => events.push(event));
+  await bridge.applyOperation({ type: 'quickApplyResult', opId: command.opId, status: 'applied', results: [] });
+  assert.equal(bridge.pendingQuickApply, null);
+  assert.ok(events.some(event => event.type === 'quickApply' && event.status === 'applied' && event.count === 3));
+  await bridge.disconnect();
+});
