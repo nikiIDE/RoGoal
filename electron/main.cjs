@@ -100,6 +100,22 @@ function registerIpc() {
       clipboard.writeText(value);
       return { ok: true };
     },
+    'bridge:export-project': async (event) => {
+      if (!mainWindow || event.sender !== mainWindow.webContents ||
+          event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Invalid export request.');
+      const session = bridge.session;
+      if (!bridge.ready || !session || session.suspended) throw new Error('Connect Roblox Studio before exporting.');
+      if (!session.projectExport) throw new Error('Install the RoGoal 0.6.0 Studio plugin and pair again to export.');
+      const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+        defaultPath: 'RoGoal-Project.md',
+        filters: [{ name: 'Markdown', extensions: ['md'] }],
+      });
+      if (canceled || !filePath) return null;
+      if (session !== bridge.session) throw new Error('Studio changed Places. Start the export again.');
+      const result = await bridge.exportProject();
+      await fs.promises.writeFile(filePath, result.markdown, 'utf8');
+      return { count: result.count, unavailable: result.unavailable };
+    },
     'bridge:get-state': () => bridge.getState(),
     'bridge:request-source': (_event, id) => bridge.requestSource(id),
     'bridge:save-quick-apply-draft': (_event, text) => bridge.saveQuickApplyDraft(text),

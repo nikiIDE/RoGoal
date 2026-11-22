@@ -1,6 +1,6 @@
 {
   "name": "rogoal",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Local Roblox Studio-to-Windows Luau bridge with two-way synchronization and backups",
   "private": true,
   "author": "Cursor Bridge Contributors",

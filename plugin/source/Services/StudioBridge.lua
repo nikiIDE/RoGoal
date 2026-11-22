@@ -578,6 +578,8 @@ function StudioBridge:_queueCommand(command: any)
 					reply = {type = "mutationResult", opId = nextCommand.opId, status = "error", results = {}}
 				elseif nextCommand.type == "loadSource" then
 					reply = {type = "sourceUnavailable", id = nextCommand.scriptId}
+				elseif nextCommand.type == "exportProject" then
+					reply = {type = "projectExport", opId = nextCommand.opId, error = tostring(problem)}
 				elseif nextCommand.type == "listChildren" then
 					reply = {type = "childrenPage", opId = nextCommand.opId, parentId = nextCommand.parentId, offset = nextCommand.offset, invalidated = true}
 				end
@@ -604,6 +606,31 @@ function StudioBridge:_applyCommand(command: any)
 			function(target: Instance, withSource: boolean): any return self:_metadata(target, withSource) end,
 			function(target: Instance) self:_observe(target) end, canContinue)
 		if canContinue() then table.insert(self._results, reply) end
+		return
+	end
+	if command.type == "exportProject" then
+		local scripts: {any} = {}
+		local bytes = 0
+		for index, target in game:GetDescendants() do
+			if index % 128 == 0 then task.wait() end
+			if not canContinue() then error("Studio changed sessions or entered Play Test during export.") end
+			if (target:IsA("Script") or target:IsA("LocalScript") or target:IsA("ModuleScript")) and target:IsDescendantOf(game) then
+				local path: {string} = {}
+				local current: Instance? = target
+				while current and current ~= game do
+					table.insert(path, 1, current.Name)
+					current = current.Parent
+				end
+				local source = self:_editorSource(target)
+				local entry = {path = path, className = target.ClassName, source = source}
+				bytes += #HttpService:JSONEncode(entry)
+				if #scripts >= 10000 or bytes > 24 * 1024 * 1024 then
+					error("This Place exceeds the export limit of 10,000 scripts or 24 MiB of encoded script data.")
+				end
+				table.insert(scripts, entry)
+			end
+		end
+		table.insert(self._results, {type = "projectExport", opId = command.opId, scripts = scripts})
 		return
 	end
 	if command.type == "quickApply" then
@@ -834,6 +861,7 @@ function StudioBridge:Connect(pairingCode: string): (boolean, string)
 		return self:_request("/v1/pair", {
 			code = pairingCode,
 			protocolVersion = Defaults.ProtocolVersion,
+			projectExport = true,
 			studioRunId = self._studioRunId,
 			placeKey = getPlaceKey(),
 			placeName = game.Name,

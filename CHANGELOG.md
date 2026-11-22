@@ -1,3 +1,8 @@
+## v0.6.0 - Project context and JSON scaffolds
+
+- Added compact JSON starter structures to Quick Apply with the existing preview and undo flow.
+- Added a chat-style Project context panel for composing prompts and exporting Studio scripts to Markdown.
+
 ## v0.4.2 — Embedded AI removal and focused workspace
 
 - Removed the entire ChatGPT account/authentication, AI inference, Place-specific chat/memory/code panels, their IPC surface, OAuth storage code, and obsolete assistant tests.

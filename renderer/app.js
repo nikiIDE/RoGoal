@@ -2293,6 +2293,47 @@ function handleQuickApplyEvent(event) {
   }
 }
 
+const projectContext = qa('projectContextDialog');
+const projectContextMessage = qa('projectContextMessage');
+qa('railProjectContext').addEventListener('click', () => projectContext.showModal());
+qa('importScaffoldResponse').addEventListener('click', () => {
+  projectContext.close();
+  openQuickApply();
+});
+qa('scaffoldComposer').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const request = qa('scaffoldRequest').value.trim();
+  if (!request) {
+    projectContextMessage.textContent = 'Describe your project first.';
+    return;
+  }
+  const instructions = [
+    'Generate a complete Roblox Luau starter structure for this request.',
+    'Return only minified JSON with schema {"v":1,"s":[["Service/Folder/ScriptName","S","--!strict\\nprint(1)"]]}',
+    'Each tuple contains the unique, case-sensitive Studio path, the script class (S = Script, L = LocalScript, M = ModuleScript), and full Luau source starting with --!strict.',
+    'Use existing Roblox services, with folders implied by each path. Put client entry points under StarterPlayer/StarterPlayerScripts, server entry points under ServerScriptService, and shared modules under ReplicatedStorage when applicable.',
+    'Create at most 128 new scripts with complete, mutually consistent code. The importer rejects existing destinations.',
+    '',
+    request,
+  ].join('\n');
+  try {
+    await api.copyText(instructions);
+    projectContextMessage.textContent = 'Prompt copied. Paste it into your AI chat, then import the JSON response.';
+  } catch (error) { projectContextMessage.textContent = error.message; }
+});
+qa('exportProjectMarkdown').addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  projectContextMessage.textContent = 'Choose where to save your project snapshot.';
+  try {
+    const result = await api.exportProject();
+    projectContextMessage.textContent = result
+      ? `Saved ${result.count} scripts.${result.unavailable ? ` Studio could not read ${result.unavailable} sources.` : ''}`
+      : 'Export canceled.';
+  } catch (error) { projectContextMessage.textContent = error.message; }
+  finally { button.disabled = false; }
+});
+
 qa('quickApplyLauncher').addEventListener('click', openQuickApply);
 qa('quickCopyFormat').addEventListener('click', async () => {
   try { await api.copyText(quickApplyFormat); toast('AI delivery instructions copied.'); }
@@ -2315,7 +2356,7 @@ qa('quickApplyFile').addEventListener('change', async (event) => {
   const file = event.target.files?.[0];
   event.target.value = '';
   if (!file || quickApplyApplying) return;
-  if (file.size > limits.maxBundleBytes) { quickApplyNotice('The selected TXT exceeds 16 MiB.', true); return; }
+  if (file.size > limits.maxBundleBytes) { quickApplyNotice('The selected bundle exceeds 16 MiB.', true); return; }
   try {
     qa('quickApplyText').value = await file.text();
     qa('quickApplyText').dispatchEvent(new Event('input', { bubbles: true }));

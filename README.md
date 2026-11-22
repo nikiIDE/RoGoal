@@ -1,6 +1,6 @@
 # RoGoal
 
-RoGoal is a Windows Luau workbench for Roblox Studio. The Electron app includes Monaco, a synchronized Explorer, search across scripts, split editing, recovery snapshots, and Quick Apply for previewing and importing script bundles.
+RoGoal is a Windows Luau workbench for Roblox Studio. The Electron app includes Monaco, a synchronized Explorer, search across scripts, split editing, recovery snapshots, Quick Apply for previewing and importing script bundles, and Project context for preparing AI scaffold prompts and exporting Places as Markdown.
 
 The Studio plugin opens as a dockable widget. The two apps pair with a six-digit code and communicate over `127.0.0.1:38471`. Script history, drafts, and recovery snapshots are stored locally.
 
@@ -38,4 +38,4 @@ npm run test:ui:workspace
 
 The Playwright suites simulate a Studio connection and exercise Monaco, the Explorer, and recovery flows. GitHub Actions runs workspace validation and can build and publish a release using the **Build and publish Windows release** workflow.
 
-See the [workspace controls](docs/WORKSPACE.md) and [release notes](docs/RELEASE_0_5_0.md). This repository continues the [original bridge](https://github.com/nikis-gif/CursorBridge) and retains its proprietary `UNLICENSED` status.
+See the [workspace controls](docs/WORKSPACE.md) and [release notes](docs/RELEASE_0_6_0.md). This repository continues the [original bridge](https://github.com/nikis-gif/CursorBridge) and retains its proprietary `UNLICENSED` status.

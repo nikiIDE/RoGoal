@@ -8,6 +8,7 @@ const { buildQuickApplyPlan, publicPreview } = require('./quick-apply.cjs');
 const limits = require('../shared/limits.json');
 const { IncomingTransfer, OutgoingTransfers } = require('./wire-transfer.cjs');
 const resolver = require('./quick-apply-resolver.cjs');
+const { requestExport, acceptExport, finishExport } = require('./project-export.cjs');
 const { prepareMutation, descendantsOf, sourceFingerprint, MAX_BACKUP_SCRIPTS } = require('./hierarchy-mutations.cjs');
 
 const MAX_BODY_BYTES = 1024 * 1024;
@@ -302,6 +303,7 @@ class BridgeServer extends EventEmitter {
     this.resumeTicket = null;
     this.session = {
       protocolVersion: data.protocolVersion === 2 ? 2 : 1,
+      projectExport: data.protocolVersion === 2 && data.projectExport === true,
       suspended: false,
       incoming: new IncomingTransfer(),
       outgoing: new OutgoingTransfers(),
@@ -367,7 +369,7 @@ class BridgeServer extends EventEmitter {
     }
     // Fresh epoch: uncertain writes must never be replayed after expiry.
     const result = this.pair({code:this.pairingCode,studioRunId:ticket.studioRunId,
-      placeKey:ticket.placeKey,placeName:ticket.placeName,protocolVersion:2});
+      placeKey:ticket.placeKey,placeName:ticket.placeName,protocolVersion:2,projectExport:ticket.projectExport});
     this.session.resumePreviousToken = token;
     return {...result,reset:true};
   }
@@ -417,9 +419,12 @@ class BridgeServer extends EventEmitter {
       commands.push({ type: 'quickApply', opId: pending.opId, entries: pending.entries });
     }
     if (this.pathResolution?.session === this.session) commands.unshift(this.pathResolution.command);
+    if (this.session.projectExportRequest) commands.unshift(this.session.projectExportRequest.command);
     const selected = commands.slice(0, 25);
     return {ok:true,ready:this.ready,commands:this.session.protocolVersion === 2 ? this.session.outgoing.pack(selected) : selected};
   }
+
+  exportProject() { return requestExport(this); }
 
   requestSource(id) {
     if (!this.ready || !this.session || this.session.suspended) throw new Error('Studio is not connected.');
@@ -517,6 +522,7 @@ class BridgeServer extends EventEmitter {
       return;
     }
     if (op.type === 'resolvedPaths') { await resolver.acceptResolution(this, op); return; }
+    if (op.type === 'projectExport') { acceptExport(this, op); return; }
     if (op.type === 'commandDone') return;
 
     if (op.type === 'reset') {
@@ -1022,6 +1028,9 @@ class BridgeServer extends EventEmitter {
 
   previewQuickApply(text, classOverrides = {}) {
     if (!this.session || !this.ready || this.session.suspended) throw new Error('Connect Roblox Studio before previewing the bundle.');
+    if (typeof text === 'string' && /^\s*(?:\{|\x60{3})/.test(text) && !this.session.projectExport) {
+      throw new Error('Install the RoGoal 0.6.0 Studio plugin and pair again to import a JSON scaffold.');
+    }
     if (this.session.protocolVersion === 2) return resolver.startResolution(this, text, classOverrides);
     if (this.indexing) throw new Error('Quick Apply requires a complete hierarchy or fully loaded paths. Wait for automatic indexing to pause.');
     const plan = buildQuickApplyPlan(text, this.nodes, classOverrides);
@@ -1085,6 +1094,7 @@ class BridgeServer extends EventEmitter {
       entries: actions.map((entry) => ({
         index: entry.index, action: entry.action, path: entry.path, name: entry.name,
         className: entry.className, source: entry.source,
+        ...(entry.scaffold ? { scaffold: true } : {}),
         guards: entry.guards, scriptId: entry.scriptId || null,
         expectedSource: entry.expectedSource ?? null,
         anchorId: entry.anchorId || null, missingFolders: entry.missingFolders,
@@ -1120,9 +1130,10 @@ class BridgeServer extends EventEmitter {
     const previous = this.session;
     if (reason === 'heartbeat-timeout' && previous.protocolVersion === 2) {
       this.resumeTicket = {token:previous.token, studioRunId:previous.studioRunId,
-        placeKey:previous.placeKey,placeName:previous.placeName,createdAt:this.now()};
+        placeKey:previous.placeKey,placeName:previous.placeName,projectExport:previous.projectExport,createdAt:this.now()};
     }
     resolver.cancelResolution(this, 'Studio disconnected while resolving paths. Your TXT is preserved.');
+    finishExport(previous, new Error('Studio disconnected during export.'));
     previous.incoming.clear(); previous.outgoing.clear();
     this.session = null;
     this.emitState();

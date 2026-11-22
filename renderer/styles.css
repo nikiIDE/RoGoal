@@ -413,3 +413,24 @@ body[data-theme=obsidian] {
 }
 .tree-page-action:not(:disabled) { cursor:pointer; color:var(--sub); }
 .tree-page-action:not(:disabled):hover { color:var(--text); background:var(--hover); }
+
+.project-spark { color: #df8f72; font-size: 20px; line-height: 1; }
+.project-context-dialog { width: min(740px, calc(100vw - 28px)); max-width: none; padding: 0; border-radius: 19px; background: var(--bg); color: var(--text); }
+.project-context-dialog::backdrop { background: rgb(0 0 0 / 68%); backdrop-filter: blur(4px); }
+.project-context-top { display: flex; align-items: center; justify-content: space-between; padding: 15px 19px; border-bottom: 1px solid var(--soft-border); }
+.project-context-brand { display: inline-flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 650; }
+.project-context-content { display: grid; justify-items: start; gap: 13px; margin: auto; max-width: 620px; padding: clamp(20px, 6vw, 62px) clamp(16px, 4vw, 44px); }
+.project-context-content h2 { margin: 0; font-family: inherit; font-weight: 650; font-size: clamp(23px, 5vw, 36px); line-height: 1.2; letter-spacing: -.045em; }
+.project-context-content p { margin: 0; color: var(--muted); line-height: 1.6; }
+.scaffold-composer { display: grid; gap: 10px; width: 100%; padding: 15px; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; }
+.scaffold-composer:focus-within { border-color: var(--selection-line); }
+.scaffold-composer label { color: var(--sub); font-weight: 600; }
+.scaffold-composer textarea { width: 100%; min-height: 62px; max-height: 200px; resize: vertical; border: 0; background: transparent; color: var(--text); font: inherit; outline-offset: 5px; }
+.scaffold-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.project-copy { color: #21140f; background: #df8f72; padding: 7px 12px; border: 0; border-radius: 999px; font: inherit; font-weight: 650; cursor: pointer; }
+.project-copy:hover { background: #f1a68c; }
+#projectContextMessage { min-height: 1.6em; overflow-wrap: anywhere; }
+
+.quick-apply-dialog .qa-text { border-radius: 16px; }
+.quick-apply-dialog .qa-summary { border-radius: 13px; }
+.project-context-dialog .icon-button:focus-visible, .project-copy:focus-visible { outline: 2px solid #df8f72; outline-offset: 3px; }

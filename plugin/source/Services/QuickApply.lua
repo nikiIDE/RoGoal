@@ -17,6 +17,7 @@ local ALLOWED_SCRIPT_CLASSES: {[string]: boolean} = {
 }
 
 type Entry = {
+	scaffold: boolean?,
 	index: number,
 	action: string,
 	name: string,
@@ -194,6 +195,10 @@ function QuickApply.Execute(command: any, instances: {[string]: Instance}, manag
 					else
 						error("Destination folder became ambiguous while applying scripts.")
 					end
+				end
+				if entry.scaffold then
+					local _, matches = findMatchingChild(parent, entry.name)
+					if matches > 0 then error("A scaffold destination already exists: " .. entry.name) end
 				end
 				local object = Instance.new(entry.className) :: LuaSourceContainer
 				object.Name = entry.name

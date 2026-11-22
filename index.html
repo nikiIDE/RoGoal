@@ -25,6 +25,7 @@
       <button class="rail-button" id="railHome" aria-label="Workspace home" title="Workspace home" aria-pressed="true"><span data-icon="home"></span><span class="rail-tooltip">Workspace</span></button>
       <button class="rail-button" id="railExplorer" aria-label="Explorer" title="Explorer (Ctrl+Shift+E)" aria-pressed="false"><span data-icon="folder"></span><span class="rail-tooltip">Explorer</span></button>
       <button class="rail-button" id="railSearch" aria-label="Find in Place" title="Find in Place (Ctrl+Shift+F)" aria-pressed="false"><span data-icon="search"></span><span class="rail-tooltip">Search</span></button>
+      <button class="rail-button" id="railProjectContext" aria-label="Project context" title="Project context"><span class="project-spark" aria-hidden="true">✦</span><span class="rail-tooltip">Project context</span></button>
       <button class="rail-button" id="railQuickApply" aria-label="Open Quick Apply" title="Quick Apply (Ctrl+L)"><span data-icon="import"></span><span class="rail-tooltip">Quick Apply</span></button>
       <button class="rail-button" id="railRecovery" aria-label="Open recovery files" title="Recovery files"><span data-icon="history"></span><span class="rail-tooltip">Recovery</span></button>
       <div class="rail-spacer"></div>
@@ -152,6 +153,27 @@
   <div class="marquee" id="marquee" aria-hidden="true" hidden></div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
+  <dialog id="projectContextDialog" class="modal project-context-dialog" aria-labelledby="projectContextTitle">
+    <div class="project-context-top">
+      <span class="project-context-brand"><span class="project-spark" aria-hidden="true">✦</span> RoGoal</span>
+      <button type="button" class="icon-button quiet" data-close="projectContextDialog" aria-label="Close project context"><span data-icon="close"></span></button>
+    </div>
+    <div class="project-context-content">
+      <h2 id="projectContextTitle">What are you building?</h2>
+      <p>Describe a Roblox project, copy the prompt to your AI chat, then import its JSON response into Studio.</p>
+      <form id="scaffoldComposer" class="scaffold-composer">
+        <label for="scaffoldRequest">Describe your starter project</label>
+        <textarea id="scaffoldRequest" rows="3" maxlength="8000" required placeholder="A round-based arena with server matchmaking and a client HUD…"></textarea>
+        <div class="scaffold-actions">
+          <button type="button" id="exportProjectMarkdown" class="secondary-button">Export project .md</button>
+          <button type="submit" class="project-copy">Copy prompt <span aria-hidden="true">↑</span></button>
+        </div>
+      </form>
+      <button type="button" id="importScaffoldResponse" class="secondary-button">Import response in Quick Apply</button>
+      <p id="projectContextMessage" role="status"></p>
+    </div>
+  </dialog>
+
   <dialog id="quickApplyDialog" class="modal quick-apply-dialog" aria-labelledby="quickApplyTitle">
     <div class="qa-header">
       <div class="qa-heading"><h2 id="quickApplyTitle">Quick Apply</h2><p>Review and apply a script bundle to Roblox Studio.</p></div>
@@ -159,8 +181,8 @@
     </div>
     <div class="qa-body">
       <div class="qa-input-pane">
-        <div class="qa-pane-top"><label for="quickApplyText">Script bundle <span class="qa-extension">.txt</span></label><button class="qa-inline" id="quickCopyFormat" type="button"><span data-icon="copy"></span> Copy AI format</button></div>
-        <textarea id="quickApplyText" class="qa-text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste a script bundle here…
+        <div class="qa-pane-top"><label for="quickApplyText">Script bundle <span class="qa-extension">.txt / .json</span></label><button class="qa-inline" id="quickCopyFormat" type="button"><span data-icon="copy"></span> Copy AI format</button></div>
+        <textarea id="quickApplyText" class="qa-text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste a TXT bundle or JSON scaffold here…
 
 ==================================================
 SCRIPT: Main
@@ -171,7 +193,7 @@ STATUS: MODIFIED
 --!strict
 
 print(&quot;Updated&quot;)"></textarea>
-        <div class="qa-input-footer"><span id="quickApplySize">0 / 16 MiB</span><div><button class="qa-inline" id="quickApplyClear" type="button">Clear</button><label class="qa-file-button" for="quickApplyFile">Open .txt</label><input id="quickApplyFile" type="file" accept=".txt,text/plain" hidden /></div></div>
+        <div class="qa-input-footer"><span id="quickApplySize">0 / 16 MiB</span><div><button class="qa-inline" id="quickApplyClear" type="button">Clear</button><label class="qa-file-button" for="quickApplyFile">Open file</label><input id="quickApplyFile" type="file" accept=".txt,.json,text/plain,application/json" hidden /></div></div>
       </div>
       <div class="qa-preview-pane">
         <div class="qa-pane-top"><span>Review changes</span><span class="qa-place" id="quickApplyPlace">No Studio session</span></div>

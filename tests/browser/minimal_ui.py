@@ -66,7 +66,7 @@ def test_compact_split_and_layout(page):
     expect(page.locator('#dashboardScripts')).to_have_text('3')
     expect(page.locator('#tabs')).to_be_hidden()
     assert page.locator('#welcome .dashboard-action svg').count() == 0
-    assert page.locator('.activity-rail button').count() == 6
+    assert page.locator('.activity-rail button').count() == 7
     for node in page.locator('.tree-class svg').all():
         expect(node).to_have_attribute('stroke', 'currentColor')
     page.locator('.tree-row[data-id="s1"] .tree-name').click()
@@ -120,9 +120,15 @@ def test_workspace_without_embedded_ai(page):
         mount_built(page, offline=True)
         assert page.locator('#railAssistant').count() == 0
         assert page.locator('#aiPanel').count() == 0
-        assert page.locator('.activity-rail button').count() == 6
+        assert page.locator('.activity-rail button').count() == 7
         assert page.locator('#shortcutsDialog').count() <= 1
         expect(page.locator('#quickApplyLauncher')).to_be_visible()
+        page.locator('#railProjectContext').click()
+        inside_viewport(page, '#projectContextDialog')
+        expect(page.locator('#exportProjectMarkdown')).to_be_visible()
+        page.locator('#importScaffoldResponse').click()
+        expect(page.locator('#quickApplyDialog')).to_be_visible()
+        page.keyboard.press('Escape')
         page.keyboard.press('Control+Shift+a')
         assert page.locator('#aiPanel').count() == 0
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')

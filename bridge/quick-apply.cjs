@@ -11,10 +11,51 @@ const HEADER = /^={50}\nSCRIPT: ([^\n]+)\nPATH: ([^\n]+)\nSTATUS: (NEW|MODIFIED)
 
 function error(message) { throw new Error(message); }
 
+function parseScaffold(text) {
+  let scaffold;
+  try { scaffold = JSON.parse(text); } catch { error('Invalid scaffold JSON. Paste the complete response.'); }
+  if (scaffold?.v !== 1 || !Array.isArray(scaffold.s) || scaffold.s.length === 0 ||
+      scaffold.s.length > MAX_SCRIPTS) error(`Expected scaffold version 1 with 1 to ${MAX_SCRIPTS} scripts.`);
+  const seen = new Set();
+  const classes = { S: 'Script', L: 'LocalScript', M: 'ModuleScript' };
+  return scaffold.s.map((item, index) => {
+    if (!Array.isArray(item) || item.length !== 3) error(`Script ${index + 1}: expected [path, class, source].`);
+    const [rawPath, kind, source] = item;
+    if (typeof kind !== 'string' || !Object.hasOwn(classes, kind) || typeof rawPath !== 'string' || typeof source !== 'string') {
+      error(`Script ${index + 1}: invalid path, class or source.`);
+    }
+    const segments = validatePath(rawPath, index);
+    const path = `game/${segments.join('/')}`;
+    if (seen.has(path)) error(`Duplicate scaffold path: ${path}`);
+    seen.add(path);
+    if (!/^--!strict\r?\n[\s\S]*\S/.test(source) || Buffer.byteLength(source) > MAX_SCRIPT_BYTES) {
+      error(`Script ${index + 1}: source must begin with --!strict, include code and fit within 2 MiB.`);
+    }
+    return { index, name: segments.at(-1), path, segments, status: 'NEW',
+      className: classes[kind], source, scaffold: true };
+  });
+}
+
+function validatePath(rawPath, index) {
+  if (rawPath !== rawPath.trim() || rawPath.length > 2000 || rawPath.includes('\\')) {
+    error(`Script ${index + 1}: PATH must use / separators without surrounding spaces.`);
+  }
+  const segments = rawPath.split('/');
+  if (segments[0] === 'game') segments.shift();
+  if (segments.length < 2 || segments.length > 30 || segments.some((part) => !part || part.trim() !== part ||
+    part.length > 100 || part === '.' || part === '..' || /[\x00-\x1f\x7f]/.test(part))) {
+    error(`Script ${index + 1}: expected game/Service/Folder/Script or Service/Script.`);
+  }
+  return segments;
+}
+
 function parseBundle(raw) {
   if (typeof raw !== 'string' || !raw.trim()) error('Paste an AI script bundle before previewing.');
   if (Buffer.byteLength(raw, 'utf8') > MAX_BUNDLE_BYTES) error('Bundle exceeds the 16 MiB safety limit.');
   const text = raw.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  const stripped = text.trim();
+  const fenced = /^\x60{3}(?:json)?[ \t]*\n([\s\S]+)\n\x60{3}$/i.exec(stripped);
+  if (stripped.startsWith('{') || fenced) return parseScaffold(fenced ? fenced[1] : stripped);
   const markers = [...text.matchAll(HEADER)];
   if (!markers.length) {
     error('No valid script headers. Expected 50 equals signs, SCRIPT, PATH, STATUS, and 50 equals signs.');
@@ -40,15 +81,7 @@ function parseBundle(raw) {
     if (!name || name.trim() !== name || name.length > 100 || /[\x00-\x1f\x7f/]/.test(name)) {
       error(`Script ${index + 1}: invalid SCRIPT name.`);
     }
-    if (rawPath !== rawPath.trim() || rawPath.length > 2000 || rawPath.includes('\\')) {
-      error(`Script ${index + 1}: PATH must use / separators without surrounding spaces.`);
-    }
-    const segments = rawPath.split('/');
-    if (segments[0] === 'game') segments.shift();
-    if (segments.length < 2 || segments.length > 30 || segments.some((part) => !part || part.trim() !== part ||
-      part.length > 100 || part === '.' || part === '..' || /[\x00-\x1f\x7f]/.test(part))) {
-      error(`Script ${index + 1}: expected game/Service/Folder/Script or Service/Script.`);
-    }
+    const segments = validatePath(rawPath, index);
     if (segments.at(-1) !== name) error(`Script ${index + 1}: SCRIPT must match the final PATH segment exactly.`);
     entries.push({ index, name, path: `game/${segments.join('/')}`, segments, status: match[3],
       className: match[4] || null, source });
@@ -122,6 +155,7 @@ function buildQuickApplyPlan(raw, nodes, classOverrides = {}) {
           guards: [...guards, snapshot(node)], scriptId: node.id,
           revision: node.revision, expectedSource: node.source, missingFolders: [] });
       } else {
+        if (entry.scaffold && leafMatches.length) error('An instance already exists at this scaffold path.');
         entries.push({ ...entry, className: selectedClass, action: 'create',
           guards, anchorId: currentParentId, missingFolders,
           duplicateName: leafMatches.some((n) => n.isScript) });
