@@ -143,7 +143,7 @@ function registerIpc() {
     'bridge:request-source': (_event, id) => bridge.requestSource(id),
     'bridge:save-quick-apply-draft': (_event, text) => bridge.saveQuickApplyDraft(text),
     'bridge:get-quick-apply-draft': () => bridge.getQuickApplyDraft(),
-    'bridge:preview-quick-apply': (_event, text, overrides) => bridge.previewQuickApply(text, overrides),
+    'bridge:preview-quick-apply': (_event, text, overrides, organization) => bridge.previewQuickApply(text, overrides, organization),
     'bridge:apply-quick-apply': (_event, token) => bridge.applyQuickApply(token),
     'bridge:mutate-hierarchy': (_event, request) => bridge.mutateHierarchy(request),
     'bridge:write-script': (_event, id, source, revision) => bridge.writeScript(id, source, revision),

@@ -12,8 +12,15 @@ function cancelResolution(bridge, message) {
   pending.reject(new Error(message));
 }
 
-function startResolution(bridge, text, overrides) {
+function startResolution(bridge, text, overrides, organization) {
   const entries = parseBundle(text);
+  if (organization !== entries.every(entry => entry.organization === true)) {
+    throw new Error(organization ? 'Use the organization JSON with folder and empty script paths. Use Quick Apply for code.'
+      : 'Open Game structure to import this organization plan.');
+  }
+  if (organization && !bridge.session.organizationImport) {
+    throw new Error('Update RoGoal.rbxmx in Roblox Studio and pair again to import a structure.');
+  }
   if (entries.some(entry => entry.scaffold) && !bridge.session.projectExport) {
     throw new Error('The connected Studio plugin cannot import JSON. Install the current RoGoal.rbxmx and pair again.');
   }
@@ -30,7 +37,7 @@ function startResolution(bridge, text, overrides) {
     timer.unref?.();
     bridge.pathResolution = { opId, session, text, overrides, resolve, reject, timer,
       command: {type:'resolvePaths', opId,
-        paths:entries.map(({index,path,status,segments}) => ({index,path,status,segments}))} };
+        paths:entries.map(({index,path,status,segments,organization}) => ({index,path,status,segments,organization}))} };
     bridge.emitWorkspaceEvent({type:'quickApplyProgress', message:'Resolving exact paths in Roblox Studio...'});
   });
 }
@@ -76,7 +83,7 @@ async function acceptResolution(bridge, op) {
     bridge.pathResolution = null;
     const token = randomUUID();
     bridge.quickApplyPreviews.clear();
-    bridge.quickApplyPreviews.set(token, {...plan,text:pending.text,token,resolved:true,
+    bridge.quickApplyPreviews.set(token, {...plan,text:pending.text,token,resolved:true,organization:plan.entries.every(entry => entry.organization === true),
       createdAt:bridge.now(),sessionId:bridge.session.sessionId});
     pending.resolve({ok:plan.errors.length === 0,token,...publicPreview(plan),placeName:bridge.session.placeName});
   } catch (error) {

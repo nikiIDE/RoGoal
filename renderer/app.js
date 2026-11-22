@@ -21,24 +21,24 @@ self.MonacoEnvironment = { getWorker: () => new EditorWorker() };
 
 const api = window.cursorBridge;
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-function enter(element, distance = 8) {
+function playMotion(element, distance = 8, stagger = 0) {
   if (!element || motion.matches || document.body.dataset.reduceMotion === 'true') return;
   const gsap = window.gsap;
   if (!gsap) return;
   gsap.killTweensOf(element);
   gsap.fromTo(element, { opacity: 0, y: distance }, {
-    opacity: 1, y: 0, duration: .24, ease: 'power2.out', clearProps: 'opacity,transform',
+    opacity: 1, y: 0, duration: .24, stagger, ease: 'power2.out', clearProps: 'opacity,transform',
   });
 }
 const animatedSurfaces = new MutationObserver(records => {
   for (const { target, attributeName } of records) {
-    if (attributeName === 'open' ? target.open : !target.hidden) enter(target);
+    if (attributeName === 'open' ? target.open : !target.hidden) playMotion(target);
   }
 });
 for (const surface of document.querySelectorAll('dialog, #welcome, #explorerPane, #codePanel, #secondaryPane, #layoutPanel, #themePanel, #sessionPanel')) {
   animatedSurfaces.observe(surface, { attributes: true, attributeFilter: ['open', 'hidden'] });
 }
-enter(document.querySelector('.dashboard-content'), 12);
+playMotion(document.querySelector('.dashboard-content'), 12);
 const $ = (id) => document.getElementById(id);
 const nodes = new Map();
 const expanded = new Set();
@@ -109,7 +109,7 @@ function toast(message, warning = false) {
   const element = $('toast');
   element.textContent = message; element.classList.toggle('warning', warning);
   element.hidden = false;
-  enter(element);
+  playMotion(element);
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { element.hidden = true; }, warning ? 6500 : 3100);
   setFooter(message);
@@ -144,7 +144,7 @@ monaco.languages.setMonarchTokensProvider('luau', {
 });
 
 const themePalette = {
-  studio: { background: '171717', fg: 'EFEFEF', keyword: 'E6A890', string: 'AED397', comment: 'A7AAAD' },
+  studio: { background: '191B20', fg: 'F1F3F7', keyword: 'AEC3F6', string: 'AED397', comment: 'A7AAAD' },
   cursor: { background: '202124', fg: 'F2F3F5', keyword: 'B9ACFF', string: '9CDBBE', comment: '969DAE' },
   obsidian: { background: '101013', fg: 'F2F1EF', keyword: 'B6A3D6', string: 'B9CCA6', comment: '858590' },
   graphite: { background: '1B1D21', fg: 'ECEDF0', keyword: 'C1AFDB', string: 'B9CFAD', comment: '777F8C' },
@@ -177,7 +177,7 @@ function savePreference(key, value) {
   try { localStorage.setItem(key, value); } catch { /* Appearance persistence must not block editing. */ }
 }
 const themeLabels = { studio: 'Studio', obsidian: 'Obsidian', cursor: 'Slate', graphite: 'Graphite', midnight: 'Midnight', aurora: 'Aurora' };
-const themeColors = { studio: '#171717', obsidian: '#0b0b0d', cursor: '#202124', graphite: '#161719', midnight: '#0d121a', aurora: '#0c1517' };
+const themeColors = { studio: '#191b20', obsidian: '#0b0b0d', cursor: '#202124', graphite: '#161719', midnight: '#0d121a', aurora: '#0c1517' };
 function normalizeThemeName(name, fallback = 'studio') {
   // Preserve the old palette preference under its new product-specific name.
   if (name === 'discord') name = 'cursor';
@@ -1145,12 +1145,12 @@ function updateStatus(status) {
   $('tabs').hidden = !ready;
   $('codePanel').hidden = !ready || !selectedId;
   $('welcome').hidden = ready && !!selectedId;
-  $('welcomeTitle').textContent = incompatiblePlugin ? 'Update your Studio plugin.' : status.recovering ? 'Reconnecting to Studio.' : ready ? 'What are we building today?'
+  $('welcomeTitle').textContent = incompatiblePlugin ? 'Update your Studio plugin.' : status.recovering ? 'Reconnecting to Studio.' : ready ? 'Workspace'
     : connected ? 'Preparing your workspace.' : 'Connect to Roblox Studio';
   $('welcomeDescription').textContent = incompatiblePlugin
     ? 'Install the latest RoGoal plugin, disable older copies, and pair again.' : status.recovering
     ? 'Connection interrupted. Local drafts are protected; waiting for your Studio session.' : ready
-    ? 'Start with an idea, or pick up your scripts in Explorer.'
+    ? ''
     : connected ? 'Reading your place hierarchy. This usually takes a moment.'
       : 'Enter the pairing code in the RoGoal plugin to start editing.';
   $('welcomeDescription').hidden = ready;
@@ -1166,6 +1166,7 @@ function updateStatus(status) {
   }
   if (selectedId) updateEditorStatus();
   quickApplySessionChanged();
+  refreshOrganizationSession();
   if (!ready) renderTree();
   else if (!previouslyConnected || !rowElements.size) scheduleRender();
   updateCounts();
@@ -1290,7 +1291,10 @@ function receiveServerEvent(event) {
       }
     }
   }
-  else if (event.type === 'quickApply') handleQuickApplyEvent(event);
+  else if (event.type === 'quickApply') {
+    if (event.organization) handleOrganizationResult(event);
+    else handleQuickApplyEvent(event);
+  }
   else if (event.type === 'quickApplyProgress') {
     if (qa('quickApplyDialog').open) quickApplyNotice(event.message);
   }
@@ -2296,17 +2300,153 @@ function handleQuickApplyEvent(event) {
   }
 }
 
+const organizationDialog = qa('organizationDialog');
+const organizationInput = qa('organizationText');
+const organizationFeedback = qa('organizationFeedback');
+let organizationPreview = null;
+let organizationBusy = false;
+let organizationApplying = false;
+let organizationEpoch = 0;
+let organizationSession;
+
+function organizationNotice(message, error = false) {
+  organizationFeedback.textContent = message;
+  organizationFeedback.classList.toggle('qa-error', error);
+}
+function updateOrganizationControls() {
+  const supported = canMutate() && currentStatus.organizationImport === true;
+  qa('organizationPreview').disabled = !supported || organizationBusy || !organizationInput.value.trim();
+  qa('organizationApply').disabled = !supported || organizationBusy || !organizationPreview?.ok ||
+    !organizationPreview.summary.create;
+  qa('organizationSetup').hidden = !currentStatus.connected || currentStatus.organizationImport === true;
+  qa('organizationPaste').disabled = organizationApplying;
+  organizationInput.readOnly = organizationApplying;
+}
+function clearOrganizationPreview() {
+  organizationEpoch++;
+  if (!organizationApplying) organizationBusy = false;
+  organizationPreview = null;
+  qa('organizationPlan').hidden = true;
+  qa('organizationPlan').replaceChildren();
+  updateOrganizationControls();
+}
+function refreshOrganizationSession() {
+  const session = [currentStatus.studioRunId, currentStatus.placeKey, canMutate(), currentStatus.organizationImport].join('|');
+  if (session === organizationSession) return;
+  organizationSession = session;
+  clearOrganizationPreview();
+  if (!organizationApplying) organizationNotice(!canMutate() ? 'Connect Roblox Studio to preview.'
+    : !currentStatus.organizationImport ? 'The connected plugin needs an update for structure import.' : '');
+}
+qa('openOrganization').addEventListener('click', () => {
+  clearOrganizationPreview();
+  refreshOrganizationSession();
+  organizationDialog.showModal();
+  playMotion([...organizationDialog.querySelectorAll('.structure-prompt, .structure-response')], 5, .045);
+});
+qa('organizationSetup').addEventListener('click', () => {
+  organizationDialog.close();
+  openProjectContext();
+});
+organizationInput.addEventListener('input', () => {
+  clearOrganizationPreview();
+  organizationNotice(canMutate() && currentStatus.organizationImport ? '' :
+    canMutate() ? 'The connected plugin needs an update for structure import.' : 'Connect Roblox Studio to preview.');
+});
+qa('organizationPaste').addEventListener('click', async () => {
+  const previous = organizationInput.value;
+  try {
+    const value = await api.readImportClipboard();
+    if (!organizationDialog.open || organizationApplying || organizationInput.value !== previous) return;
+    if (!value.trim()) return organizationNotice('Copy the organization JSON first.', true);
+    organizationInput.value = value;
+    organizationInput.dispatchEvent(new Event('input'));
+    organizationInput.focus();
+  } catch (error) { organizationNotice(readableError(error), true); }
+});
+qa('organizationPreview').addEventListener('click', async () => {
+  clearTimeout(quickApplyTimer);
+  quickApplyRequestEpoch++;
+  clearOrganizationPreview();
+  const epoch = organizationEpoch;
+  organizationBusy = true;
+  updateOrganizationControls();
+  organizationNotice('Checking destinations in Studio…');
+  try {
+    const plan = await api.previewQuickApply(organizationInput.value, {}, true);
+    if (epoch !== organizationEpoch) return;
+    organizationPreview = plan;
+    const rows = plan.entries.map(entry => {
+      const row = document.createElement('li');
+      const glyph = document.createElement('span');
+      addIcon(glyph, entry.className, 18);
+      const description = document.createElement('div');
+      const path = document.createElement('strong');
+      path.textContent = entry.path;
+      const detail = document.createElement('small');
+      detail.textContent = entry.message || (entry.action === 'unchanged' ? 'Folder already exists'
+        : entry.className === 'Folder' ? 'New folder' : `Empty ${entry.className}`);
+      description.append(path, detail);
+      row.append(glyph, description);
+      return row;
+    });
+    const list = qa('organizationPlan');
+    list.replaceChildren(...rows);
+    list.hidden = false;
+    playMotion(rows.slice(0, 8), 5, .025);
+    organizationNotice(plan.ok ? plan.summary.create ? `${plan.summary.create} entries ready to create.`
+      : 'These folders already exist.' : 'Review the destinations marked with an error.', !plan.ok);
+  } catch (error) {
+    if (epoch === organizationEpoch) organizationNotice(readableError(error), true);
+  } finally {
+    if (epoch === organizationEpoch) {
+      organizationBusy = false;
+      updateOrganizationControls();
+    }
+  }
+});
+qa('organizationApply').addEventListener('click', async () => {
+  if (!organizationPreview?.ok || organizationBusy || !canMutate() || !currentStatus.organizationImport) return;
+  if ([...localState.values()].some(state => state.dirty) || writesInFlight.size > 0) {
+    return organizationNotice('Finish syncing local script edits first.', true);
+  }
+  organizationBusy = organizationApplying = true;
+  updateOrganizationControls();
+  organizationNotice('Waiting for Studio…');
+  try { await api.applyQuickApply(organizationPreview.token); }
+  catch (error) {
+    organizationApplying = false;
+    clearOrganizationPreview();
+    organizationNotice(readableError(error), true);
+  }
+});
+function handleOrganizationResult(event) {
+  if (event.status === 'queued') return;
+  organizationApplying = false;
+  clearOrganizationPreview();
+  if (event.status === 'applied') {
+    organizationInput.value = '';
+    organizationNotice(`Structure created in Studio · ${event.count} entries.`);
+    toast('Game structure created in Studio.');
+  } else {
+    const message = event.results?.find(result => result.message)?.message || event.message || 'Studio could not complete the structure.';
+    organizationNotice(message, true);
+    if (!organizationDialog.open) toast(message, true);
+  }
+  updateOrganizationControls();
+}
+
 const projectContext = qa('projectContextDialog');
 const projectContextMessage = qa('projectContextMessage');
 function refreshProjectSupport() {
   const connected = currentStatus.connected === true;
-  const needsPlugin = connected && currentStatus.projectExport === false;
+  const needsPlugin = connected && (currentStatus.projectExport === false || currentStatus.organizationImport === false);
   qa('pluginHelp').hidden = !needsPlugin;
   qa('pluginHelpTitle').textContent = currentStatus.pluginVersion
-    ? `Studio plugin v${currentStatus.pluginVersion} does not support export.`
+    ? `Studio plugin v${currentStatus.pluginVersion} needs an update for all project tools.`
     : 'The connected Studio plugin does not support export.';
   const button = qa('exportProjectMarkdown');
-  button.disabled = button.dataset.busy === 'true' || !currentStatus.ready || needsPlugin;
+  button.disabled = button.dataset.busy === 'true' || !currentStatus.ready || currentStatus.projectExport === false;
   button.title = needsPlugin ? 'Update the Studio plugin to export.' : !connected ? 'Connect Studio to export.' : '';
 }
 const openProjectContext = () => {
@@ -2314,7 +2454,6 @@ const openProjectContext = () => {
   if (!projectContext.open) projectContext.showModal();
 };
 qa('railProjectContext').addEventListener('click', openProjectContext);
-qa('homeProjectContext').addEventListener('click', openProjectContext);
 for (const [id, target] of [['downloadStudioPlugin', 'download'], ['openStudioPlugins', 'folder']]) {
   qa(id).addEventListener('click', () => api.openStudioPlugin(target).catch(error => {
     projectContextMessage.textContent = readableError(error);
@@ -2335,18 +2474,18 @@ async function copyScaffoldPrompt(event) {
     return;
   }
   const instructions = [
-    'Generate a complete Roblox Luau starter structure for this request.',
-    'Return only minified JSON with schema {"v":1,"s":[["Service/Folder/ScriptName","S","--!strict\\nprint(1)"]]}',
-    'Each tuple contains the unique, case-sensitive Studio path, the script class (S = Script, L = LocalScript, M = ModuleScript), and full Luau source starting with --!strict.',
-    'Use existing Roblox services, with folders implied by each path. Put client entry points under StarterPlayer/StarterPlayerScripts, server entry points under ServerScriptService, and shared modules under ReplicatedStorage when applicable.',
-    'Create at most 128 new scripts with complete, mutually consistent code. The importer rejects existing destinations.',
+    'Propose only the initial Roblox folder and empty script organization for the idea below.',
+    'Return one JSON object in this format: {"v":2,"items":[["ReplicatedStorage/Game","F"],["ServerScriptService/Game/Main","S"]]}',
+    'Each item is [Studio path, class]. F = Folder, S = Script, L = LocalScript, M = ModuleScript.',
+    'Use existing Roblox services. Use StarterPlayer/StarterPlayerScripts for client scripts.',
+    'Use at most 128 unique destinations. Omit file contents, gameplay logic, code, and additional object fields.',
     '',
     request,
   ].join('\n');
   try {
     await api.copyText(instructions);
-    toast('Prompt copied. Paste it into your AI chat, then choose Paste AI response here.');
-  } catch (error) { toast(readableError(error), true); }
+    organizationNotice('Prompt copied. Paste the returned organization JSON below.');
+  } catch (error) { organizationNotice(readableError(error), true); }
 }
 qa('homeComposer').addEventListener('submit', copyScaffoldPrompt);
 qa('exportProjectMarkdown').addEventListener('click', async (event) => {

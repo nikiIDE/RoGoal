@@ -1,3 +1,8 @@
+## v0.6.3 - Dedicated game structure workspace
+
+- Added folder and empty script import in a separate dialog.
+- Standardized control corners, icons, typography and scrollbars.
+
 ## v0.6.2 - Direct Studio import and simpler workspace
 
 - Moved Paste AI response to the home screen and simplified the Studio widget.

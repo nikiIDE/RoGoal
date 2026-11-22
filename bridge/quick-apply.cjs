@@ -14,6 +14,7 @@ function error(message) { throw new Error(message); }
 function parseScaffold(text) {
   let scaffold;
   try { scaffold = JSON.parse(text); } catch { error('Invalid scaffold JSON. Paste the complete response.'); }
+  if (scaffold?.v === 2) return parseOrganization(scaffold);
   if (scaffold?.v !== 1 || !Array.isArray(scaffold.s) || scaffold.s.length === 0 ||
       scaffold.s.length > MAX_SCRIPTS) error(`Expected scaffold version 1 with 1 to ${MAX_SCRIPTS} scripts.`);
   const seen = new Set();
@@ -40,6 +41,28 @@ function parseScaffold(text) {
   });
 }
 
+function parseOrganization(document) {
+  if (!Array.isArray(document.items) || document.items.length === 0 || document.items.length > MAX_SCRIPTS ||
+      Object.keys(document).some(key => key !== 'v' && key !== 'items')) {
+    error(`Expected an organization plan with 1 to ${MAX_SCRIPTS} folders or empty scripts.`);
+  }
+  const aliases = { F: 'Folder', S: 'Script', L: 'LocalScript', M: 'ModuleScript' };
+  const paths = new Set();
+  return document.items.map((item, index) => {
+    if (!Array.isArray(item) || item.length !== 2 || typeof item[0] !== 'string' ||
+        typeof item[1] !== 'string' || !Object.hasOwn(aliases, item[1])) {
+      error(`Item ${index + 1}: use [path, class] with F, S, L or M. Code is not accepted here.`);
+    }
+    const [rawPath, kind] = item;
+    const segments = validatePath(rawPath, index);
+    const path = `game/${segments.join('/')}`;
+    if (paths.has(path)) error(`Duplicate destination: ${path}`);
+    paths.add(path);
+    return { index, name: segments.at(-1), path, segments, status: 'NEW',
+      className: aliases[kind], source: '', scaffold: true, organization: true };
+  });
+}
+
 function validatePath(rawPath, index) {
   if (rawPath !== rawPath.trim() || rawPath.length > 2000 || rawPath.includes('\\')) {
     error(`Script ${index + 1}: PATH must use / separators without surrounding spaces.`);
@@ -48,7 +71,7 @@ function validatePath(rawPath, index) {
   if (segments[0] === 'game') segments.shift();
   if (segments.length < 2 || segments.length > 30 || segments.some((part) => !part || part.trim() !== part ||
     part.length > 100 || part === '.' || part === '..' || /[\x00-\x1f\x7f]/.test(part))) {
-    error(`Script ${index + 1}: expected game/Service/Folder/Script or Service/Script.`);
+    error(`Item ${index + 1}: use a destination such as ServerScriptService/Game/Item.`);
   }
   return segments;
 }
@@ -118,8 +141,8 @@ function buildQuickApplyPlan(raw, nodes, classOverrides = {}) {
   const allPaths = new Set(parsed.filter((p) => p.status === 'NEW').map((p) => p.path));
   for (const entry of parsed) {
     try {
-      const selectedClass = classOverrides[entry.index] ?? entry.className ?? 'Script';
-      if (!SCRIPT_CLASSES.has(selectedClass) || (entry.status === 'MODIFIED' && entry.className && entry.className !== selectedClass)) {
+      const selectedClass = entry.organization ? entry.className : classOverrides[entry.index] ?? entry.className ?? 'Script';
+      if (!(SCRIPT_CLASSES.has(selectedClass) || (entry.organization && selectedClass === 'Folder')) || (entry.status === 'MODIFIED' && entry.className && entry.className !== selectedClass)) {
         error('Only Script, LocalScript, and ModuleScript are supported.');
       }
       let currentParentId = 'game';
@@ -163,7 +186,12 @@ function buildQuickApplyPlan(raw, nodes, classOverrides = {}) {
           guards: [...guards, snapshot(node)], scriptId: node.id,
           revision: node.revision, expectedSource: node.source, missingFolders: [] });
       } else {
-        if (entry.scaffold && leafMatches.length) error('An instance already exists at this scaffold path.');
+        if (entry.organization && entry.className === 'Folder' &&
+            leafMatches.length === 1 && leafMatches[0].className === 'Folder') {
+          entries.push({ ...entry, action: 'unchanged', guards: [...guards, snapshot(leafMatches[0])] });
+          continue;
+        }
+        if (entry.scaffold && leafMatches.length) error('An instance already exists at this path.');
         entries.push({ ...entry, className: selectedClass, action: 'create',
           guards, anchorId: currentParentId, missingFolders,
           duplicateName: leafMatches.some((n) => n.isScript) });
@@ -175,7 +203,7 @@ function buildQuickApplyPlan(raw, nodes, classOverrides = {}) {
   }
   // A NEW script cannot simultaneously serve as an implicitly created parent
   // in the same bundle. The intermediate path builder creates only Folders.
-  const newlyCreatedPaths = parsed.filter((entry) => entry.status === 'NEW').map((entry) => entry.path);
+  const newlyCreatedPaths = parsed.filter((entry) => entry.status === 'NEW' && entry.className !== 'Folder').map((entry) => entry.path);
   for (const entry of entries) {
     if (entry.action === 'error') continue;
     if (newlyCreatedPaths.some((createdPath) => createdPath !== entry.path && entry.path.startsWith(`${createdPath}/`))) {

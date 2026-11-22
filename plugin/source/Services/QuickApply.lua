@@ -18,6 +18,7 @@ local ALLOWED_SCRIPT_CLASSES: {[string]: boolean} = {
 
 type Entry = {
 	scaffold: boolean?,
+	organization: boolean?,
 	index: number,
 	action: string,
 	name: string,
@@ -95,9 +96,11 @@ local function preflight(entries: {Entry}, instances: {[string]: Instance}, mana
 	if RunService:IsRunning() then return false, "Stop Play Test before applying scripts." end
 	if #entries < 1 or #entries > MAX_ENTRIES then return false, "Invalid script count." end
 	for _, entry in entries do
-		if not ALLOWED_SCRIPT_CLASSES[entry.className] or not validName(entry.name)
-			or typeof(entry.source) ~= "string" or #entry.source > MAX_SCRIPT_BYTES
-			or string.sub(entry.source, 1, 9) ~= "--!strict" then
+		local organization = entry.organization == true and entry.scaffold == true and entry.action == "create"
+		local allowedClass = ALLOWED_SCRIPT_CLASSES[entry.className] or (organization and entry.className == "Folder")
+		local validSource = typeof(entry.source) == "string" and #entry.source <= MAX_SCRIPT_BYTES
+			and (if organization then entry.source == "" else string.sub(entry.source, 1, 9) == "--!strict")
+		if not allowedClass or not validName(entry.name) or not validSource then
 			return false, "Invalid script type, name, or source."
 		end
 		if not verifyGuards(entry.guards, instances, managed) then
@@ -200,14 +203,16 @@ function QuickApply.Execute(command: any, instances: {[string]: Instance}, manag
 					local _, matches = findMatchingChild(parent, entry.name)
 					if matches > 0 then error("A scaffold destination already exists: " .. entry.name) end
 				end
-				local object = Instance.new(entry.className) :: LuaSourceContainer
+				local object = Instance.new(entry.className)
 				object.Name = entry.name
 				object.Parent = parent
 				table.insert(created, object)
 				idFor(object)
-				local original = sourceFor(object)
-				if original == nil or (original ~= entry.source and not writeSource(object, entry.source, original, canContinue)) then
-					error("Studio refused to initialize " .. entry.name .. ".")
+				if object:IsA("LuaSourceContainer") then
+					local original = sourceFor(object)
+					if original == nil or (original ~= entry.source and not writeSource(object, entry.source, original, canContinue)) then
+						error("Studio refused to initialize " .. entry.name .. ".")
+					end
 				end
 			end
 			table.insert(appliedResults, {index = entry.index, status = "applied", message = "Applied in Studio."})

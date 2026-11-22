@@ -3,7 +3,7 @@
 // Native caption controls retain Windows snap, maximize and accessibility behavior.
 // Renderer input selects an allowlisted theme, never arbitrary BrowserWindow options.
 const COLORS = Object.freeze({
-  studio: '#171717',
+  studio: '#191b20',
   cursor: '#191a1c',
   obsidian: '#0b0b0d',
   graphite: '#161719',

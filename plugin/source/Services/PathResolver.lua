@@ -62,7 +62,7 @@ function PathResolver.Resolve(command: any, managed: (Instance) -> boolean,
 					if path.status == "NEW" then break end
 					error("MODIFIED destination was not found: " .. component .. ". Nothing was created.")
 				end
-				if #found > 1 and not (leaf and path.status == "NEW") then error("Ambiguous path: multiple instances named " .. component .. ".") end
+				if #found > 1 and not (leaf and path.status == "NEW" and not path.organization) then error("Ambiguous path: multiple instances named " .. component .. ".") end
 				local target = found[1]
 				if not managed(target) or target.Parent ~= parent then error("Path changed or is outside managed services.") end
 				include(target, leaf and path.status == "MODIFIED")

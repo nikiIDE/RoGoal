@@ -52,7 +52,7 @@ test('all UI glyphs use a single neutral outline family and reject inherited key
   for (const name of ['home','import','Folder','Script','LocalScript','ModuleScript','Players','Camera','Frame','__proto__','constructor','<script>']) {
     const svg = icon(name,16);
     assert.match(svg,/stroke="currentColor"/);
-    assert.match(svg,/stroke-width="1.5"/);
+    assert.match(svg,/stroke-width="2.25"/);
     assert.doesNotMatch(svg,/#[0-9a-f]{3,8}|<script>|\[object|function /i);
   }
   assert.match(icon('Script', '<svg>'), /width="16"/);
@@ -63,7 +63,7 @@ test('home is text-first, all interface labels are English and themes use produc
   assert.match(html,/<html lang="en">/);
   assert.match(html,/<body data-theme="studio">/);
   assert.doesNotMatch(html,/Discord|sparkles|dashboard-kicker|compose-symbol|dashboard-signoff/);
-  for (const id of ['homeComposer','dashboardCompose','homeProjectContext','pasteImportClipboard','quickApplyConfirm']) {
+  for (const id of ['homeComposer','dashboardCompose','openOrganization','pasteImportClipboard','quickApplyConfirm']) {
     assert.match(html,new RegExp('id="'+id+'"'));
   }
   assert.match(html,/<option value="studio">Studio<\/option>/);

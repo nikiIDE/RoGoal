@@ -111,3 +111,42 @@ test('AI response with surrounding prose reaches Studio and waits for its acknow
   assert.ok(events.some(event => event.type === 'quickApply' && event.status === 'applied' && event.count === 3));
   await bridge.disconnect();
 });
+
+test('organization creates folders and empty scripts using a dedicated import mode', async t => {
+  const storageDir = await fs.mkdtemp(path.join(os.tmpdir(), 'rogoal-structure-'));
+  t.after(() => fs.rm(storageDir, { recursive: true, force: true }));
+  const bridge = new BridgeServer({ storageDir });
+  bridge.pair({ code: bridge.pairingCode, studioRunId: 'structure-test', protocolVersion: 2, projectExport: true });
+  await bridge.applyOperation({ type: 'ready' });
+  const raw = JSON.stringify({ v: 2, items: [
+    ['ServerScriptService/Game/Combat/CombatService', 'M'],
+    ['ServerScriptService/Game/Combat', 'F'],
+    ['ServerScriptService/Game', 'F'],
+  ] });
+  assert.throws(() => bridge.previewQuickApply(raw), /Game structure/);
+  assert.throws(() => bridge.previewQuickApply(raw, {}, true), /Update RoGoal/);
+  bridge.updatePluginInfo(bridge.session, { organizationImport: true });
+  const legacy = JSON.stringify({ v: 1, s: [['ServerScriptService/Main', 'S', 'print(1)']] });
+  assert.throws(() => bridge.previewQuickApply(legacy, {}, true), /Use Quick Apply for code/);
+  assert.throws(() => parseBundle(JSON.stringify({ v: 2, items: [['ServerScriptService/Main', 'S', 'print(1)']] })), /Code is not accepted/);
+
+  const pending = bridge.previewQuickApply(raw, {}, true);
+  const request = bridge.pathResolution.command;
+  await bridge.applyOperation({ type: 'resolvedPaths', opId: request.opId, errors: [], nodes: [
+    { id: 'server', parentId: 'game', name: 'ServerScriptService', className: 'ServerScriptService' },
+    { id: 'game-folder', parentId: 'server', name: 'Game', className: 'Folder' },
+  ] });
+  const result = await pending;
+  assert.deepEqual(result.summary, { create: 2, modify: 0, unchanged: 1, errors: 0 });
+  const job = await bridge.applyQuickApply(result.token);
+  const command = bridge.poll().commands.find(item => item.type === 'quickApply');
+  assert.equal(command.opId, job.opId);
+  assert.deepEqual(command.entries.map(entry => [entry.className, entry.source, entry.organization]), [
+    ['Folder', '', true], ['ModuleScript', '', true],
+  ]);
+  const events = [];
+  bridge.on('event', event => events.push(event));
+  await bridge.applyOperation({ type: 'quickApplyResult', opId: job.opId, status: 'applied', results: [] });
+  assert.ok(events.some(event => event.type === 'quickApply' && event.organization && event.status === 'applied'));
+  await bridge.disconnect();
+});

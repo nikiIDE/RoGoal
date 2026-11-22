@@ -180,8 +180,10 @@ class BridgeServer extends EventEmitter {
     const version = cleanString(data.pluginVersion, 24);
     const validVersion = /^\d+\.\d+\.\d+$/.test(version);
     const exportAdded = data.projectExport === true && session.protocolVersion === 2 && !session.projectExport;
-    if (!exportAdded && (!validVersion || session.pluginVersion === version)) return;
+    const organizationAdded = data.organizationImport === true && session.protocolVersion === 2 && !session.organizationImport;
+    if (!exportAdded && !organizationAdded && (!validVersion || session.pluginVersion === version)) return;
     if (exportAdded) session.projectExport = true;
+    if (organizationAdded) session.organizationImport = true;
     if (validVersion) session.pluginVersion = version;
     this.emitState();
   }
@@ -193,6 +195,7 @@ class BridgeServer extends EventEmitter {
       recovering: !!this.session?.suspended || !!this.resumeTicket,
       protocolVersion: this.session?.protocolVersion || 1,
       projectExport: this.session?.projectExport === true,
+      organizationImport: this.session?.organizationImport === true,
       pluginVersion: this.session?.pluginVersion || null,
       placeKey: this.session?.placeKey || this.cachedPlaceKey,
       placeName: this.session?.placeName || this.cachedPlaceName,
@@ -317,6 +320,7 @@ class BridgeServer extends EventEmitter {
     this.session = {
       protocolVersion: data.protocolVersion === 2 ? 2 : 1,
       projectExport: data.protocolVersion === 2 && data.projectExport === true,
+      organizationImport: data.protocolVersion === 2 && data.organizationImport === true,
       pluginVersion: /^\d+\.\d+\.\d+$/.test(cleanString(data.pluginVersion, 24)) ? data.pluginVersion : null,
       suspended: false,
       incoming: new IncomingTransfer(),
@@ -383,7 +387,7 @@ class BridgeServer extends EventEmitter {
     }
     // Fresh epoch: uncertain writes must never be replayed after expiry.
     const result = this.pair({code:this.pairingCode,studioRunId:ticket.studioRunId,
-      placeKey:ticket.placeKey,placeName:ticket.placeName,protocolVersion:2,projectExport:ticket.projectExport});
+      placeKey:ticket.placeKey,placeName:ticket.placeName,protocolVersion:2,projectExport:ticket.projectExport,organizationImport:ticket.organizationImport});
     this.session.resumePreviousToken = token;
     return {...result,reset:true};
   }
@@ -742,7 +746,7 @@ class BridgeServer extends EventEmitter {
         index: Number.isSafeInteger(item.index) ? item.index : -1,
         status: cleanString(item.status, 30), message: cleanString(item.message, 200),
       })) : [];
-      this.emitWorkspaceEvent({ type: 'quickApply', opId: pending.opId, status, results,
+      this.emitWorkspaceEvent({ type: 'quickApply', opId: pending.opId, status, results, organization: pending.organization,
         count: pending.entries.length, backupPath: pending.backupPath });
       this.log(status === 'applied' ? 'success' : 'warning', `Quick Apply: ${status}.`);
       return;
@@ -1040,9 +1044,10 @@ class BridgeServer extends EventEmitter {
     }
   }
 
-  previewQuickApply(text, classOverrides = {}) {
+  previewQuickApply(text, classOverrides = {}, organization = false) {
     if (!this.session || !this.ready || this.session.suspended) throw new Error('Connect Roblox Studio before previewing the bundle.');
-    if (this.session.protocolVersion === 2) return resolver.startResolution(this, text, classOverrides);
+    if (this.session.protocolVersion === 2) return resolver.startResolution(this, text, classOverrides, organization === true);
+    if (organization) throw new Error('Update the Studio plugin to import a structure.');
     if (this.indexing) throw new Error('Quick Apply requires a complete hierarchy or fully loaded paths. Wait for automatic indexing to pause.');
     const plan = buildQuickApplyPlan(text, this.nodes, classOverrides);
     if (plan.entries.some(entry => entry.scaffold)) throw new Error('Update the Studio plugin before importing JSON.');
@@ -1080,6 +1085,7 @@ class BridgeServer extends EventEmitter {
       throw new Error('Studio hierarchy or source changed since the preview. Review the bundle again.');
     }
     const actions = latest.entries.filter((entry) => entry.action !== 'unchanged');
+    if (preview.organization) actions.sort((a, b) => a.segments.length - b.segments.length);
     if (!actions.length) throw new Error('All included scripts already match Studio. Nothing to apply.');
     const totalSource = actions.reduce((n, e) => n + Buffer.byteLength(e.source,'utf8') + Buffer.byteLength(e.expectedSource || '', 'utf8'), 0);
     if (totalSource > 2 * limits.maxBundleBytes) throw new Error('Combined current and replacement sources exceed 32 MiB. Split the bundle.');
@@ -1102,18 +1108,19 @@ class BridgeServer extends EventEmitter {
       throw new Error('Studio disconnected while saving backups. The bundle was preserved in recovery.');
     }
     const opId = crypto.randomUUID();
-    this.pendingQuickApply = { opId, lockIds, backupPath, startedAt: this.now(),
+    this.pendingQuickApply = { opId, lockIds, backupPath, organization: preview.organization === true, startedAt: this.now(),
       entries: actions.map((entry) => ({
         index: entry.index, action: entry.action, path: entry.path, name: entry.name,
         className: entry.className, source: entry.source,
         ...(entry.scaffold ? { scaffold: true } : {}),
+        ...(entry.organization ? { organization: true } : {}),
         guards: entry.guards, scriptId: entry.scriptId || null,
         expectedSource: entry.expectedSource ?? null,
         anchorId: entry.anchorId || null, missingFolders: entry.missingFolders,
       })) };
     for (const id of lockIds) this.mutationLocks.add(id);
     this.quickApplyPreviews.clear();
-    this.emitWorkspaceEvent({ type: 'quickApply', opId, status: 'queued', count: actions.length, backupPath });
+    this.emitWorkspaceEvent({ type: 'quickApply', opId, status: 'queued', count: actions.length, backupPath, organization: preview.organization === true });
     return { status: 'queued', opId, count: actions.length, backupPath };
     } finally {
       this.quickApplyPreparing = false;
@@ -1142,7 +1149,7 @@ class BridgeServer extends EventEmitter {
     const previous = this.session;
     if (reason === 'heartbeat-timeout' && previous.protocolVersion === 2) {
       this.resumeTicket = {token:previous.token, studioRunId:previous.studioRunId,
-        placeKey:previous.placeKey,placeName:previous.placeName,projectExport:previous.projectExport,createdAt:this.now()};
+        placeKey:previous.placeKey,placeName:previous.placeName,projectExport:previous.projectExport,organizationImport:previous.organizationImport,createdAt:this.now()};
     }
     resolver.cancelResolution(this, 'Studio disconnected while resolving paths. Your TXT is preserved.');
     finishExport(previous, new Error('Studio disconnected during export.'));
@@ -1152,7 +1159,7 @@ class BridgeServer extends EventEmitter {
     await previous.changesQueue.catch(() => {});
     if (this.pendingQuickApply) {
       const pending = this.pendingQuickApply;
-      this.emitWorkspaceEvent({ type: 'quickApply', opId: pending.opId, status: 'unknown',
+      this.emitWorkspaceEvent({ type: 'quickApply', opId: pending.opId, status: 'unknown', organization: pending.organization,
         message: 'Studio disconnected before confirming Quick Apply. Inspect the place; the original bundle is backed up.',
         backupPath: pending.backupPath });
       this.pendingQuickApply = null;

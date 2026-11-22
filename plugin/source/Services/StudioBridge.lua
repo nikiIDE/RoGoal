@@ -522,7 +522,7 @@ function StudioBridge:_sendNextBatch()
 	for id, nextPart in self._commandReceipts do table.insert(receipts, {id = id, next = nextPart}) end
 	-- Empty exchanges are authenticated heartbeats, independent of keyboard input.
 	local data = self:_request("/v2/exchange", {sequence = sequence, ops = ops, receipts = receipts,
-		projectExport = true, pluginVersion = Defaults.Version}, self._token)
+		projectExport = true, organizationImport = true, pluginVersion = Defaults.Version}, self._token)
 	if sessionId ~= self._sessionId or not self._connected then return end
 	if data.receivedSequence ~= sequence then error("The server did not acknowledge the expected batch.") end
 	self._sequence = sequence
@@ -864,6 +864,7 @@ function StudioBridge:Connect(pairingCode: string): (boolean, string)
 			code = pairingCode,
 			protocolVersion = Defaults.ProtocolVersion,
 			projectExport = true,
+			organizationImport = true,
 			pluginVersion = Defaults.Version,
 			studioRunId = self._studioRunId,
 			placeKey = getPlaceKey(),

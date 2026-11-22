@@ -100,7 +100,7 @@ function BridgeWindow:SetConnected(connected: boolean)
 		self.CodeBox.Text = ""
 	end
 	self._title.Text = if connected then "Studio connected" else "Connect to RoGoal"
-	self._instructions.Text = if connected then "Use Paste AI response in the Windows app to import folders and scripts."
+	self._instructions.Text = if connected then "Choose Game structure or Quick Apply in the Windows app."
 		else "Enter the six-digit code shown in the Windows app."
 end
 

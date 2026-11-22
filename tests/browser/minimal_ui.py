@@ -59,9 +59,9 @@ def test_theme_preference_migration(page):
 def test_compact_split_and_layout(page):
     page.set_viewport_size({'width': 840, 'height': 540})
     mount_built(page)
-    expect(page.locator('#homeComposer')).to_be_visible()
+    expect(page.locator('#openOrganization')).to_be_visible()
     page.evaluate("window.__emitServer({type:'status',status:{connected:true,ready:true,protocolVersion:2,projectExport:false,pluginVersion:'0.5.0',placeKey:'100-200',placeName:'Sample Place'}})")
-    page.locator('#homeProjectContext').click()
+    page.locator('#railProjectContext').click()
     expect(page.locator('#pluginHelp')).to_contain_text('v0.5.0')
     expect(page.locator('#exportProjectMarkdown')).to_be_disabled()
     page.evaluate("window.__emitServer({type:'status',status:{connected:true,ready:true,protocolVersion:2,projectExport:true,pluginVersion:'0.6.1',placeKey:'100-200',placeName:'Sample Place'}})")
@@ -126,6 +126,11 @@ def test_workspace_without_embedded_ai(page):
         assert page.locator('.activity-rail button').count() == 7
         assert page.locator('#shortcutsDialog').count() <= 1
         expect(page.locator('#dashboardCompose')).to_be_visible()
+        page.locator('#openOrganization').click()
+        inside_viewport(page, '#organizationDialog')
+        inside_viewport(page, '#organizationApply')
+        expect(page.locator('#organizationApply')).to_be_disabled()
+        page.keyboard.press('Escape')
         page.locator('#railProjectContext').click()
         inside_viewport(page, '#projectContextDialog')
         expect(page.locator('#exportProjectMarkdown')).to_be_disabled()

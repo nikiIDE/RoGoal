@@ -32,8 +32,8 @@ return {{}}
 MOCK_API = r'''(() => {
   window.__quickCalls = [];
   window.cursorBridge.readImportClipboard = async () => window.__importClipboard;
-  window.cursorBridge.previewQuickApply = async (text, overrides) => {
-    window.__quickCalls.push({kind:'preview',text,overrides});
+  window.cursorBridge.previewQuickApply = async (text, overrides, organization) => {
+    window.__quickCalls.push({kind:'preview',text,overrides,organization});
     return {ok:true,token:'preview-token',placeName:'Sample Place',summary:{create:1,modify:1,unchanged:0,errors:0},errors:[],entries:[
       {index:0,name:'Main',path:'game/Workspace/Main',className:'Script',status:'MODIFIED',action:'modify',bytes:40,missingFolders:[]},
       {index:1,name:'MyModule',path:'game/ServerScriptService/Systems/MyModule',className:overrides[1]||'ModuleScript',
@@ -72,6 +72,21 @@ def main():
             page.wait_for_function("window.__quickCalls.some(item => item.text?.startsWith('{'))")
             assert page.locator('#quickApplyText').input_value().startswith('{"v":1')
             page.locator('#quickApplyClear').click()
+            page.keyboard.press('Escape')
+            page.evaluate('window.__quickCalls.length = 0')
+            page.evaluate("""window.__emitServer({type:'status',status:{connected:true,ready:true,
+              protocolVersion:2,organizationImport:true,projectExport:true,placeName:'Sample Place',placeKey:'100-200'}})""")
+            page.locator('#openOrganization').click()
+            assert page.locator('#organizationDialog').is_visible()
+            assert not page.locator('#quickApplyDialog').is_visible()
+            page.locator('#organizationText').fill('{"v":2,"items":[["ServerScriptService/Game","F"]]}')
+            page.locator('#organizationPreview').click()
+            page.wait_for_function('window.__quickCalls.some(item => item.organization === true)')
+            assert page.locator('#organizationPlan').is_visible()
+            page.locator('#organizationApply').click()
+            page.wait_for_function('window.__quickCalls.some(item => item.kind === "apply")')
+            page.evaluate("window.__emitServer({type:'quickApply',status:'applied',opId:'qa-1',organization:true,count:1})")
+            assert 'Structure created' in page.locator('#organizationFeedback').inner_text()
             page.keyboard.press('Escape')
             page.evaluate('window.__quickCalls.length = 0')
             # Shortcut must work without navigating away from Monaco/editor.

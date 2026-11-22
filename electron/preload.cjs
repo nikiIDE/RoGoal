@@ -10,7 +10,7 @@ contextBridge.exposeInMainWorld('cursorBridge', {
   readImportClipboard: () => ipcRenderer.invoke('bridge:read-import-clipboard'),
   saveQuickApplyDraft: (text) => ipcRenderer.invoke('bridge:save-quick-apply-draft', text),
   getQuickApplyDraft: () => ipcRenderer.invoke('bridge:get-quick-apply-draft'),
-  previewQuickApply: (text, overrides) => ipcRenderer.invoke('bridge:preview-quick-apply', text, overrides),
+  previewQuickApply: (text, overrides, organization) => ipcRenderer.invoke('bridge:preview-quick-apply', text, overrides, organization),
   applyQuickApply: (token) => ipcRenderer.invoke('bridge:apply-quick-apply', token),
   mutateHierarchy: (request) => ipcRenderer.invoke('bridge:mutate-hierarchy', request),
   openStudioPlugin: (target) => ipcRenderer.invoke('bridge:open-studio-plugin', target),

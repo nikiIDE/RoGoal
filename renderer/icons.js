@@ -1,5 +1,6 @@
 // A single outline family. Navigation and instance icons share the same stroke and color.
 const glyphs = {
+  structures: '<rect x="7.5" y="2.5" width="9" height="6" rx="2"/><path d="M12 8.5v4M5 15v-2.5h14V15"/><rect x="2" y="15" width="6" height="6" rx="2"/><rect x="16" y="15" width="6" height="6" rx="2"/>',
   home: '<path d="m3 10 9-7 9 7v10H3zM9 20v-7h6v7"/>',
   layout: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/>',
   'layout-right': '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M15 4v16"/>',
@@ -7,11 +8,11 @@ const glyphs = {
   'split-horizontal': '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 12h18"/>',
   'code-brackets': '<path d="m8 6-6 6 6 6m8-12 6 6-6 6M14 4l-4 16"/>',
   shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6zM8 12l3 3 5-6"/>',
-  folder:'<path d="M3 6h7l2 2h9v11H3z"/>',
+  folder:'<path d="M3 8a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   Workspace:'<path d="M12 2 21 7 12 12 3 7zM3 7v10l9 5 9-5V7M12 12v10"/>',
   Part:'<path d="M12 3 20 8 12 13 4 8zM4 8v9l8 4 8-4V8M12 13v8"/>',
   Model:'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
-  Folder:'<path d="M3 6h7l2 2h9v11H3z"/>',
+  Folder:'<path d="M3 8a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   Script:'<path d="M7 3h7l4 4v14H7zM14 3v5h4M10 12h6M10 16h5"/>',
   LocalScript:'<path d="M7 3h7l4 4v14H7zM14 3v5h4M11 13l-2 2 2 2M14 17h3"/>',
   ModuleScript:'<path d="M7 3h7l4 4v14H7zM14 3v5h4M11 13l-2 2 2 2M15 13l2 2-2 2"/>',
@@ -87,5 +88,5 @@ export function icon(name, size = 16) {
   const key = Object.hasOwn(aliases, name) ? aliases[name] : name;
   const glyph = Object.hasOwn(glyphs, key) ? glyphs[key] : glyphs.service;
   const pixels = Number.isFinite(size) ? Math.max(8, Math.min(48, size)) : 16;
-  return `<svg width="${pixels}" height="${pixels}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${glyph}</svg>`;
+  return `<svg width="${pixels}" height="${pixels}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${glyph}</svg>`;
 }

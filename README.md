@@ -38,4 +38,4 @@ npm run test:ui:workspace
 
 The Playwright suites simulate a Studio connection and exercise Monaco, the Explorer, and recovery flows. GitHub Actions runs workspace validation and can build and publish a release using the **Build and publish Windows release** workflow.
 
-See the [workspace controls](docs/WORKSPACE.md) and [release notes](docs/RELEASE_0_6_2.md). This repository continues the [original bridge](https://github.com/nikis-gif/CursorBridge) and retains its proprietary `UNLICENSED` status.
+See the [workspace controls](docs/WORKSPACE.md) and [release notes](docs/RELEASE_0_6_3.md). This repository continues the [original bridge](https://github.com/nikis-gif/CursorBridge) and retains its proprietary `UNLICENSED` status.

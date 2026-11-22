@@ -12,7 +12,7 @@
     <div class="window-titlebar-content"><img class="window-app-icon" src="/RoGoal.png" alt="" width="15" height="15" /><span class="window-app-name">RoGoal</span><span class="window-title-divider">/</span><span id="windowWorkspace">Local workspace</span></div>
   </div>
   <header class="app-header">
-    <div class="brand-lockup"><span class="brand-name"><span class="project-spark" aria-hidden="true">✦</span> RoGoal</span><span class="brand-divider"></span><span class="brand-workspace" id="headerPlace">Workspace</span></div>
+    <div class="brand-lockup"><span class="brand-name">RoGoal</span><span class="brand-divider"></span><span class="brand-workspace" id="headerPlace">Workspace</span></div>
     <div class="header-actions">
       <button class="header-status" id="sessionToggle" aria-haspopup="true" aria-expanded="false" title="Session details"><span class="status-light" id="statusLight"></span><span id="connectionState">Waiting for Studio</span><span data-icon="chevron-down"></span></button>
       <button class="header-button" id="layoutToggle" title="Workspace layout" aria-label="Workspace layout" aria-haspopup="dialog" aria-expanded="false">Layout</button>
@@ -24,7 +24,7 @@
       <button class="rail-button" id="railHome" aria-label="Workspace home" title="Workspace home" aria-pressed="true"><span data-icon="home"></span><span class="rail-tooltip">Workspace</span></button>
       <button class="rail-button" id="railExplorer" aria-label="Explorer" title="Explorer (Ctrl+Shift+E)" aria-pressed="false"><span data-icon="folder"></span><span class="rail-tooltip">Explorer</span></button>
       <button class="rail-button" id="railSearch" aria-label="Find in Place" title="Find in Place (Ctrl+Shift+F)" aria-pressed="false"><span data-icon="search"></span><span class="rail-tooltip">Search</span></button>
-      <button class="rail-button" id="railProjectContext" aria-label="Project tools" title="Project tools"><span class="project-spark" aria-hidden="true">✦</span><span class="rail-tooltip">Project tools</span></button>
+      <button class="rail-button" id="railProjectContext" aria-label="Project tools" title="Project tools"><span data-icon="sliders"></span><span class="rail-tooltip">Project tools</span></button>
       <button class="rail-button" id="railQuickApply" aria-label="Open Quick Apply" title="Quick Apply (Ctrl+L)"><span data-icon="import"></span><span class="rail-tooltip">Quick Apply</span></button>
       <button class="rail-button" id="railRecovery" aria-label="Open recovery files" title="Recovery files"><span data-icon="history"></span><span class="rail-tooltip">Recovery</span></button>
       <div class="rail-spacer"></div>
@@ -78,14 +78,9 @@
             <div class="pairing-copy"><span>Pairing code</span><small>RoGoal plugin in Roblox Studio</small></div>
             <div class="pairing-code"><strong id="pairingCode">------</strong><button class="icon-button quiet" id="copyCode" title="Copy pairing code" aria-label="Copy pairing code"><span data-icon="copy"></span></button></div>
           </div>
-          <form id="homeComposer" class="home-composer">
-            <label for="homeRequest" class="visually-hidden">Describe your Roblox project</label>
-            <textarea id="homeRequest" rows="1" maxlength="8000" required placeholder="Describe your Roblox project…"></textarea>
-            <button type="submit" class="project-copy">Copy prompt</button>
-          </form>
           <div class="home-actions">
-            <button class="dashboard-action" id="dashboardCompose"><span data-icon="import"></span>Paste AI response</button>
-            <button class="dashboard-action" id="homeProjectContext">Project tools</button>
+            <button class="dashboard-action" id="openOrganization"><span data-icon="structures"></span><span><strong>Game structure</strong><small>Organize folders and empty scripts</small></span><span data-icon="chevron"></span></button>
+            <button class="dashboard-action" id="dashboardCompose"><span data-icon="import"></span><span><strong>Quick Apply</strong><small>Create or update scripts with code</small></span><span data-icon="chevron"></span></button>
           </div>
       </section>
       <section class="code-panel" id="codePanel" hidden>
@@ -154,21 +149,49 @@
     <div class="project-context-content">
       <h2 id="projectContextTitle">Project tools</h2>
       <button type="button" id="exportProjectMarkdown" class="secondary-button">Export project .md</button>
-      <button type="button" id="importScaffoldResponse" class="secondary-button">Paste AI response</button>
+      <button type="button" id="importScaffoldResponse" class="secondary-button">Open Quick Apply</button>
       <div class="plugin-help" id="pluginHelp" hidden><strong id="pluginHelpTitle"></strong><p>Close Studio, replace RoGoal.rbxmx in the local Plugins folder, then reopen Studio and pair again. Disable any older RoGoal or Cursor Bridge copies.</p><div class="scaffold-actions"><button id="downloadStudioPlugin" type="button" class="secondary-button">Get the Studio plugin</button><button id="openStudioPlugins" type="button" class="secondary-button">Open Plugins folder</button></div></div>
       <p id="projectContextMessage" role="status"></p>
     </div>
   </dialog>
 
+  <dialog id="organizationDialog" class="modal organization-dialog" aria-labelledby="organizationTitle">
+    <header class="organization-header">
+      <h2 id="organizationTitle">Game structure</h2>
+      <button type="button" class="icon-button quiet" data-close="organizationDialog" aria-label="Close game structure"><span data-icon="close"></span></button>
+    </header>
+    <div class="organization-body">
+      <form id="homeComposer" class="structure-prompt">
+        <label for="homeRequest">How should the game be organized?</label>
+        <textarea id="homeRequest" rows="2" maxlength="8000" required placeholder="Example: folders for combat, UI, and shared settings"></textarea>
+        <button type="submit" class="secondary-button"><span data-icon="copy"></span> Copy structure prompt</button>
+      </form>
+      <div class="structure-response">
+        <label for="organizationText">Organization JSON</label>
+        <textarea id="organizationText" rows="5" spellcheck="false" placeholder="Paste the structure returned by your AI"></textarea>
+        <div class="structure-actions">
+          <button type="button" id="organizationPaste" class="secondary-button">Paste from clipboard</button>
+          <button type="button" id="organizationPreview" class="secondary-button">Preview structure</button>
+        </div>
+      </div>
+      <ul id="organizationPlan" class="organization-plan" aria-label="Studio destinations" hidden></ul>
+    </div>
+    <footer class="organization-footer">
+      <span id="organizationFeedback" role="status"></span>
+      <button type="button" id="organizationSetup" class="secondary-button" hidden>Studio setup</button>
+      <button type="button" id="organizationApply" class="primary-button" disabled>Create in Studio</button>
+    </footer>
+  </dialog>
+
   <dialog id="quickApplyDialog" class="modal quick-apply-dialog" aria-labelledby="quickApplyTitle">
     <div class="qa-header">
-      <div class="qa-heading"><h2 id="quickApplyTitle">Import into Studio</h2></div>
+      <div class="qa-heading"><h2 id="quickApplyTitle">Quick Apply</h2></div>
       <button type="button" class="icon-button quiet qa-close" data-close="quickApplyDialog" aria-label="Close Quick Apply"><span data-icon="close"></span></button>
     </div>
     <div class="qa-body">
       <div class="qa-input-pane">
-        <div class="qa-pane-top"><label for="quickApplyText">AI response</label><button class="secondary-button" id="pasteImportClipboard" type="button">Paste from clipboard</button></div>
-        <textarea id="quickApplyText" class="qa-text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste the AI response here (Ctrl+V)."></textarea>
+        <div class="qa-pane-top"><label for="quickApplyText">Script bundle</label><button class="secondary-button" id="pasteImportClipboard" type="button">Paste from clipboard</button></div>
+        <textarea id="quickApplyText" wrap="soft" class="qa-text" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Paste the AI response here (Ctrl+V)."></textarea>
         <div class="qa-input-footer"><span id="quickApplySize">0 / 16 MiB</span><div><button class="qa-inline" id="quickApplyClear" type="button">Clear</button><label class="qa-file-button" for="quickApplyFile">Open file</label><input id="quickApplyFile" type="file" accept=".txt,.json,text/plain,application/json" hidden /></div></div>
       </div>
       <div class="qa-preview-pane">
